@@ -1,0 +1,19 @@
+/* 重置所有默认样式，确保根元素全屏 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 让 html/body/#app 完全撑满视口，无留白 */
+html, body, #app {
+  width: 100vw;   /* 视口宽度100% */
+  height: 100vh;  /* 视口高度100% */
+  overflow: hidden; /* 禁止滚动，避免出现滚动条 */
+}
+
+/* 全局去掉 Element Plus 输入框的蓝色聚焦样式 */
+.el-input__wrapper {
+  --el-input-focus-border-color: transparent !important;
+  box-shadow: none !important;
+}
