@@ -10,7 +10,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
  * 二级测试用例（第一轮测试）对象 level_two_test_round1
  * 
  * @author ruoyi
- * @date 2026-01-28
+ * @date 2026-01-29
  */
 public class LevelTwoTestRound1 extends BaseEntity
 {
@@ -40,6 +40,7 @@ public class LevelTwoTestRound1 extends BaseEntity
     {
         return id;
     }
+
     public void setLevelTwoTestContent(String levelTwoTestContent) 
     {
         this.levelTwoTestContent = levelTwoTestContent;
@@ -49,6 +50,7 @@ public class LevelTwoTestRound1 extends BaseEntity
     {
         return levelTwoTestContent;
     }
+
     public void setLevelTwoTestId(BigDecimal levelTwoTestId) 
     {
         this.levelTwoTestId = levelTwoTestId;
@@ -58,6 +60,7 @@ public class LevelTwoTestRound1 extends BaseEntity
     {
         return levelTwoTestId;
     }
+
     public void setLevelOneTestId(Long levelOneTestId) 
     {
         this.levelOneTestId = levelOneTestId;
