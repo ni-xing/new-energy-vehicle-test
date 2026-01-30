@@ -42,3 +42,11 @@ export function delLevelTwoTest(id) {
     method: 'delete'
   })
 }
+
+// 根据子表名查询子表数据
+export function getChildTableData(childTableName) {
+  return request({
+    url: '/test/levelTwoTest/childtable/' + childTableName,
+    method: 'get'
+  })
+}

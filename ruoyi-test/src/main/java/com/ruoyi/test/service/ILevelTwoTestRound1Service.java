@@ -1,19 +1,22 @@
 package com.ruoyi.test.service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+
 import com.ruoyi.test.domain.LevelTwoTestRound1;
 
 /**
  * 二级测试用例（第一轮测试）Service接口
- * 
+ *
  * @author ruoyi
- * @date 2026-01-29
+ * @date 2026-01-30
  */
-public interface ILevelTwoTestRound1Service 
+public interface ILevelTwoTestRound1Service
 {
     /**
      * 查询二级测试用例（第一轮测试）
-     * 
+     *
      * @param id 二级测试用例（第一轮测试）主键
      * @return 二级测试用例（第一轮测试）
      */
@@ -21,7 +24,7 @@ public interface ILevelTwoTestRound1Service
 
     /**
      * 查询二级测试用例（第一轮测试）列表
-     * 
+     *
      * @param levelTwoTestRound1 二级测试用例（第一轮测试）
      * @return 二级测试用例（第一轮测试）集合
      */
@@ -29,7 +32,7 @@ public interface ILevelTwoTestRound1Service
 
     /**
      * 新增二级测试用例（第一轮测试）
-     * 
+     *
      * @param levelTwoTestRound1 二级测试用例（第一轮测试）
      * @return 结果
      */
@@ -37,7 +40,7 @@ public interface ILevelTwoTestRound1Service
 
     /**
      * 修改二级测试用例（第一轮测试）
-     * 
+     *
      * @param levelTwoTestRound1 二级测试用例（第一轮测试）
      * @return 结果
      */
@@ -45,7 +48,7 @@ public interface ILevelTwoTestRound1Service
 
     /**
      * 批量删除二级测试用例（第一轮测试）
-     * 
+     *
      * @param ids 需要删除的二级测试用例（第一轮测试）主键集合
      * @return 结果
      */
@@ -53,9 +56,16 @@ public interface ILevelTwoTestRound1Service
 
     /**
      * 删除二级测试用例（第一轮测试）信息
-     * 
+     *
      * @param id 二级测试用例（第一轮测试）主键
      * @return 结果
      */
     public int deleteLevelTwoTestRound1ById(Long id);
+
+    /**
+     * 查询子表数据（含白名单校验、业务逻辑扩展）
+     * @param childTableName 子表名
+     * @return 子表数据列表
+     */
+    List<Map<String, Object>> getChildTableData(String childTableName);
 }

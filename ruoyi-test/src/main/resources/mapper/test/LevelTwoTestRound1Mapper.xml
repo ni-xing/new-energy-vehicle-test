@@ -1,32 +1,38 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.test.mapper.LevelTwoTestRound1Mapper">
-    
+
     <resultMap type="LevelTwoTestRound1" id="LevelTwoTestRound1Result">
         <result property="id"    column="id"    />
         <result property="levelTwoTestContent"    column="level_two_test_content"    />
         <result property="levelTwoTestId"    column="level_two_test_id"    />
         <result property="levelOneTestId"    column="level_one_test_id"    />
+        <result property="childTableName"    column="child_table_name"    />
     </resultMap>
 
     <sql id="selectLevelTwoTestRound1Vo">
-        select id, level_two_test_content, level_two_test_id, level_one_test_id from level_two_test_round1
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, child_table_name from level_two_test_round1
     </sql>
 
     <select id="selectLevelTwoTestRound1List" parameterType="LevelTwoTestRound1" resultMap="LevelTwoTestRound1Result">
         <include refid="selectLevelTwoTestRound1Vo"/>
-        <where>  
+        <where>
             <if test="levelTwoTestContent != null  and levelTwoTestContent != ''"> and level_two_test_content = #{levelTwoTestContent}</if>
             <if test="levelTwoTestId != null "> and level_two_test_id = #{levelTwoTestId}</if>
             <if test="levelOneTestId != null "> and level_one_test_id = #{levelOneTestId}</if>
+            <if test="childTableName != null  and childTableName != ''"> and child_table_name = #{childTableName}</if>
         </where>
     </select>
-    
+
     <select id="selectLevelTwoTestRound1ById" parameterType="Long" resultMap="LevelTwoTestRound1Result">
         <include refid="selectLevelTwoTestRound1Vo"/>
         where id = #{id}
+    </select>
+
+    <select id="selectChildTableData" resultType="java.util.Map">
+        SELECT * FROM ${childTableName}
     </select>
 
     <insert id="insertLevelTwoTestRound1" parameterType="LevelTwoTestRound1" useGeneratedKeys="true" keyProperty="id">
@@ -35,12 +41,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content,</if>
             <if test="levelTwoTestId != null">level_two_test_id,</if>
             <if test="levelOneTestId != null">level_one_test_id,</if>
-         </trim>
+            <if test="childTableName != null and childTableName != ''">child_table_name,</if>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">#{levelTwoTestContent},</if>
             <if test="levelTwoTestId != null">#{levelTwoTestId},</if>
             <if test="levelOneTestId != null">#{levelOneTestId},</if>
-         </trim>
+            <if test="childTableName != null and childTableName != ''">#{childTableName},</if>
+        </trim>
     </insert>
 
     <update id="updateLevelTwoTestRound1" parameterType="LevelTwoTestRound1">
@@ -49,6 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content = #{levelTwoTestContent},</if>
             <if test="levelTwoTestId != null">level_two_test_id = #{levelTwoTestId},</if>
             <if test="levelOneTestId != null">level_one_test_id = #{levelOneTestId},</if>
+            <if test="childTableName != null and childTableName != ''">child_table_name = #{childTableName},</if>
         </trim>
         where id = #{id}
     </update>
@@ -58,7 +67,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteLevelTwoTestRound1ByIds" parameterType="String">
-        delete from level_two_test_round1 where id in 
+        delete from level_two_test_round1 where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
