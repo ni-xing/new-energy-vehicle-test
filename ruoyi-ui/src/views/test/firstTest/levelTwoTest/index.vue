@@ -80,6 +80,13 @@
           <el-button
             size="mini"
             type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['test:levelTwoTest:list']"
+          >查看</el-button>
+          <el-button
+            size="mini"
+            type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['test:levelTwoTest:edit']"
@@ -121,11 +128,34 @@
         <el-button @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 查看二级测试用例详情对话框 -->
+    <el-dialog :title="viewTitle" :visible.sync="viewOpen" width="500px" append-to-body @close="cancelView">
+      <el-form ref="viewForm" :model="form" label-width="80px">
+        <el-table v-loading="childLoading"
+                  :data="childTableData"
+                  border
+                  :row-class-name="tableRowClassName"
+                  @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="自增主键" align="center" prop="id" />
+          <el-table-column label="测试值" align="center" prop="measured_value"/>
+          <el-table-column label="是否合格" align="center" prop="qualified" >
+            <template slot-scope="scope">
+              {{ scope.row.qualified === true ? '合格' : (scope.row.qualified === false ? '不合格' : '未填写') }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="cancelView">关 闭</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listLevelTwoTest, getLevelTwoTest, delLevelTwoTest, addLevelTwoTest, updateLevelTwoTest } from "@/api/test/levelTwoTest"
+import { listLevelTwoTest, getLevelTwoTest, delLevelTwoTest, addLevelTwoTest, updateLevelTwoTest,getChildTableData } from "@/api/test/levelTwoTest"
 
 export default {
   name: "LevelTwoTest",
@@ -145,17 +175,28 @@ export default {
       total: 0,
       // 二级测试用例（第一轮测试）表格数据
       levelTwoTestList: [],
+      // 新增：缓存当前子表名
+      currentChildTableName: "",
+      // 新增：子表加载状态
+      childLoading: false,
+      //子表数据
+      childTableData: [],
       // 弹出层标题
       title: "",
+      // 查看：弹出层标题
+      viewTitle: "",
       // 是否显示弹出层
       open: false,
+      // 查看：弹出层标题
+      viewOpen: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         levelTwoTestContent: null,
         levelTwoTestId: null,
-        levelOneTestId: null
+        levelOneTestId: null,
+        childTableName: null
       },
       // 表单参数
       form: {},
@@ -196,10 +237,32 @@ export default {
         this.loading = false
       })
     },
+    /** 获取子表数据 */
+    getDetailData(childTableName) {
+      if (!childTableName ) {
+        this.childLoading = false;
+        this.$message.warning("子表名为空，无法查询");
+        return;
+      }
+      // 调用接口时传入子表名和二级用例ID（关键：补充levelTwoTestId参数）
+      getChildTableData(childTableName,).then(response => {
+        this.childTableData = response.rows || []// 兼容接口返回格式
+        this.childLoading = false; // 关闭加载状态
+      }).catch(() => {
+        this.childLoading = false; // 异常时也关闭加载状态
+        this.$message.error("查询子表数据失败");
+      });
+    },
     // 取消按钮
     cancel() {
       this.open = false
       this.reset()
+    },
+    cancelView() {
+      this.viewOpen = false;
+      this.childTableData = []; // 清空子表数据
+      this.currentChildTableName = ""; // 清空缓存的子表名
+      this.reset();
     },
     // 表单重置
     reset() {
@@ -243,6 +306,19 @@ export default {
         this.title = "修改二级测试用例（第一轮测试）"
       })
     },
+    /** 查看按钮操作 */
+    handleView(row) {
+      this.reset()
+      const id = row.id || this.ids
+      this.childLoading = true
+      getLevelTwoTest(id).then(response => {
+        this.form = response.data
+        this.currentChildTableName = response.data.childTableName
+        this.getDetailData(this.currentChildTableName)
+      })
+      this.viewOpen = true
+      this.viewTitle = "查看二级测试用例（第一轮测试）"
+    },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
@@ -278,7 +354,21 @@ export default {
       this.download('test/levelTwoTest/export', {
         ...this.queryParams
       }, `levelTwoTest_${new Date().getTime()}.xlsx`)
-    }
+    },
+    // 表格行样式判断
+    tableRowClassName({ row }) {
+      // 判断：如果qualified为false（不合格），返回自定义样式类
+      if (row.qualified === false || row.qualified === 0 || row.qualified === 'false') {
+        return 'row-red'; // 自定义类名，后续用CSS设置颜色
+      }
+      // 合格/未填写的行返回空，使用默认样式
+      return '';
+    },
   }
 }
 </script>
+<style>
+ .row-red {
+  color: red !important;
+}
+</style>

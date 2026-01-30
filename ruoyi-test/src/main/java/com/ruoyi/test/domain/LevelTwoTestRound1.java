@@ -10,7 +10,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
  * 二级测试用例（第一轮测试）对象 level_two_test_round1
  * 
  * @author ruoyi
- * @date 2026-01-29
+ * @date 2026-01-30
  */
 public class LevelTwoTestRound1 extends BaseEntity
 {
@@ -30,6 +30,10 @@ public class LevelTwoTestRound1 extends BaseEntity
     /** 关联一级测试用例 */
     @Excel(name = "关联一级测试用例")
     private Long levelOneTestId;
+
+    /** 对应子表表名 */
+    @Excel(name = "对应子表表名")
+    private String childTableName;
 
     public void setId(Long id) 
     {
@@ -71,6 +75,16 @@ public class LevelTwoTestRound1 extends BaseEntity
         return levelOneTestId;
     }
 
+    public void setChildTableName(String childTableName) 
+    {
+        this.childTableName = childTableName;
+    }
+
+    public String getChildTableName() 
+    {
+        return childTableName;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -78,6 +92,7 @@ public class LevelTwoTestRound1 extends BaseEntity
             .append("levelTwoTestContent", getLevelTwoTestContent())
             .append("levelTwoTestId", getLevelTwoTestId())
             .append("levelOneTestId", getLevelOneTestId())
+            .append("childTableName", getChildTableName())
             .toString();
     }
 }
