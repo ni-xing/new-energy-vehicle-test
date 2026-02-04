@@ -50,3 +50,4 @@ export function getChildTableData(childTableName) {
     method: 'get'
   })
 }
+

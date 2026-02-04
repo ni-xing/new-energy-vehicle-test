@@ -311,7 +311,7 @@ export default {
     /** 跳转二级测试目录页面 */
     handleGoToDetail(row) {
         this.$router.push({
-          path: '/test/levelTwoTest',
+          path: '/test/firstTest/levelTwoTest/index',
           query: {
             levelOneTestId: row.id
           }

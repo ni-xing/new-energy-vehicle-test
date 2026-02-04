@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.test.mapper.LevelTwoTestRound1Mapper">
 
-    <resultMap type="LevelTwoTestRound1" id="LevelTwoTestRound1Result">
+    <resultMap type="com.ruoyi.test.domain.LevelTwoTestRound1" id="LevelTwoTestRound1Result">
         <result property="id"    column="id"    />
         <result property="levelTwoTestContent"    column="level_two_test_content"    />
         <result property="levelTwoTestId"    column="level_two_test_id"    />
@@ -16,7 +16,7 @@
         select id, level_two_test_content, level_two_test_id, level_one_test_id, child_table_name from level_two_test_round1
     </sql>
 
-    <select id="selectLevelTwoTestRound1List" parameterType="LevelTwoTestRound1" resultMap="LevelTwoTestRound1Result">
+    <select id="selectLevelTwoTestRound1List" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1" resultMap="LevelTwoTestRound1Result">
         <include refid="selectLevelTwoTestRound1Vo"/>
         <where>
             <if test="levelTwoTestContent != null  and levelTwoTestContent != ''"> and level_two_test_content = #{levelTwoTestContent}</if>
@@ -35,7 +35,7 @@
         SELECT * FROM ${childTableName}
     </select>
 
-    <insert id="insertLevelTwoTestRound1" parameterType="LevelTwoTestRound1" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertLevelTwoTestRound1" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1" useGeneratedKeys="true" keyProperty="id">
         insert into level_two_test_round1
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content,</if>
@@ -51,7 +51,7 @@
         </trim>
     </insert>
 
-    <update id="updateLevelTwoTestRound1" parameterType="LevelTwoTestRound1">
+    <update id="updateLevelTwoTestRound1" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1">
         update level_two_test_round1
         <trim prefix="SET" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content = #{levelTwoTestContent},</if>

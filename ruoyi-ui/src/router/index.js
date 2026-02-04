@@ -87,7 +87,20 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
-  }
+  },
+  {
+    path: '/test',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'firstTest/levelTwoTest/index',
+        component: () => import('@/views/test/firstTest/levelTwoTest/index'),
+        name: 'levelTwoTest',
+        meta: {title: '二级测试项目目录', icon: ''}
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载
@@ -181,3 +194,4 @@ export default new Router({
   scrollBehavior: () => ({ y: 0 }),
   routes: constantRoutes
 })
+
