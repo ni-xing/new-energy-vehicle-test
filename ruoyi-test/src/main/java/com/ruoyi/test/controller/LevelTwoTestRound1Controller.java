@@ -119,7 +119,6 @@ public class LevelTwoTestRound1Controller extends BaseController
         List<Map<String, Object>> result = levelTwoTestRound1Service.getChildTableData(childTableName);
         return getDataTable( result);
     }
-
     /**
      * 验证表名是否合法
      */

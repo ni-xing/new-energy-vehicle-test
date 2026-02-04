@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="150px">
       <el-form-item label="二级测试用例业务ID" prop="levelTwoTestId">
         <el-input
           v-model="queryParams.levelTwoTestId"
@@ -137,7 +137,6 @@
                   border
                   :row-class-name="tableRowClassName"
                   @selection-change="handleSelectionChange">
-          <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="自增主键" align="center" prop="id" />
           <el-table-column label="测试值" align="center" prop="measured_value"/>
           <el-table-column label="是否合格" align="center" prop="qualified" >
@@ -315,9 +314,10 @@ export default {
         this.form = response.data
         this.currentChildTableName = response.data.childTableName
         this.getDetailData(this.currentChildTableName)
+        this.viewTitle = response.data.levelTwoTestContent
       })
       this.viewOpen = true
-      this.viewTitle = "查看二级测试用例（第一轮测试）"
+
     },
     /** 提交按钮 */
     submitForm() {
