@@ -101,13 +101,24 @@ public class LevelTwoTestRound1ServiceImpl implements ILevelTwoTestRound1Service
     }
 
     @Override
-    public List<Map<String, Object>> getChildTableData(String childTableName) {
+    public List<Map<String, Object>> getChildTableData(String childTableName, int pageNum, int pageSize) {
         try {
-            List<Map<String, Object>> result = levelTwoTestRound1Mapper.selectChildTableData(childTableName);
+            int offset = (pageNum - 1) * pageSize;
+            List<Map<String, Object>> result = levelTwoTestRound1Mapper.selectChildTableData(childTableName, offset, pageSize);
             return result;
         } catch (Exception e) {
             log.error("查询子表{}数据失败（二级用例ID：{}）", childTableName, e);
             return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public int getChildTableDataCount(String childTableName) {
+        try {
+            return levelTwoTestRound1Mapper.selectChildTableDataCount(childTableName);
+        } catch (Exception e) {
+            log.error("查询子表{}总数失败", childTableName, e);
+            return 0;
         }
     }
 }

@@ -3,6 +3,7 @@ package com.ruoyi.test.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,10 +115,16 @@ public class LevelTwoTestRound1Controller extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('test:levelTwoTest:list')")
     @GetMapping(value = "/childtable/{childTableName}")
-    public TableDataInfo getChildTableData(@PathVariable("childTableName") String childTableName)
+    public TableDataInfo getChildTableData(@PathVariable("childTableName") String childTableName, HttpServletRequest request)
     {
-        List<Map<String, Object>> result = levelTwoTestRound1Service.getChildTableData(childTableName);
-        return getDataTable( result);
+        int pageNum = request.getParameter("pageNum") != null ? Integer.parseInt(request.getParameter("pageNum")) : 1;
+        int pageSize = request.getParameter("pageSize") != null ? Integer.parseInt(request.getParameter("pageSize")) : 10;
+        List<Map<String, Object>> result = levelTwoTestRound1Service.getChildTableData(childTableName, pageNum, pageSize);
+        int total = levelTwoTestRound1Service.getChildTableDataCount(childTableName);
+        TableDataInfo tableDataInfo = new TableDataInfo();
+        tableDataInfo.setRows(result);
+        tableDataInfo.setTotal(total);
+        return tableDataInfo;
     }
     /**
      * 验证表名是否合法

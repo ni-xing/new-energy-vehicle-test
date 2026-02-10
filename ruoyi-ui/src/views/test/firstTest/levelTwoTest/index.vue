@@ -130,7 +130,7 @@
     </el-dialog>
 
     <!-- 查看二级测试用例详情对话框 -->
-    <el-dialog :title="viewTitle" :visible.sync="viewOpen" width="500px" append-to-body @close="cancelView">
+    <el-dialog :title="viewTitle" :visible.sync="viewOpen" width="800px" append-to-body @close="cancelView">
       <el-form ref="viewForm" :model="form" label-width="80px">
         <el-table v-loading="childLoading"
                   :data="childTableData"
@@ -145,6 +145,14 @@
             </template>
           </el-table-column>
         </el-table>
+        <pagination
+          v-show="childTotal>0"
+          :total="childTotal"
+          :page.sync="childPageNum"
+          :limit.sync="childPageSize"
+          @pagination="handleChildPagination"
+          style="margin-top: 10px;"
+        />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancelView">关 闭</el-button>
@@ -180,6 +188,12 @@ export default {
       childLoading: false,
       //子表数据
       childTableData: [],
+      // 子表总条数
+      childTotal: 0,
+      // 子表页码
+      childPageNum: 1,
+      // 子表每页大小
+      childPageSize: 10,
       // 弹出层标题
       title: "",
       // 查看：弹出层标题
@@ -192,10 +206,10 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        levelTwoTestContent: null,
         levelTwoTestId: null,
         levelOneTestId: null,
-        childTableName: null
+        levelTwoTestContent: null,
+        childTableName: null,
       },
       // 表单参数
       form: {},
@@ -243,14 +257,24 @@ export default {
         this.$message.warning("子表名为空，无法查询");
         return;
       }
-      // 调用接口时传入子表名和二级用例ID（关键：补充levelTwoTestId参数）
-      getChildTableData(childTableName,).then(response => {
-        this.childTableData = response.rows || []// 兼容接口返回格式
-        this.childLoading = false; // 关闭加载状态
+      this.childLoading = true;
+      const params = {
+        pageNum: this.childPageNum,
+        pageSize: this.childPageSize
+      }
+      // 调用接口时传入子表名和分页参数
+      getChildTableData(childTableName, params).then(response => {
+        this.childTableData = response.rows || []
+        this.childTotal = response.total || 0
+        this.childLoading = false
       }).catch(() => {
-        this.childLoading = false; // 异常时也关闭加载状态
-        this.$message.error("查询子表数据失败");
+        this.childLoading = false
+        this.$message.error("查询子表数据失败")
       });
+    },
+    /** 子表分页事件处理 */
+    handleChildPagination() {
+      this.getDetailData(this.currentChildTableName)
     },
     // 取消按钮
     cancel() {
@@ -261,6 +285,8 @@ export default {
       this.viewOpen = false;
       this.childTableData = []; // 清空子表数据
       this.currentChildTableName = ""; // 清空缓存的子表名
+      this.childPageNum = 1; // 重置子表页码
+      this.childTotal = 0; // 重置子表总数
       this.reset();
     },
     // 表单重置
@@ -314,7 +340,7 @@ export default {
         this.form = response.data
         this.currentChildTableName = response.data.childTableName
         this.getDetailData(this.currentChildTableName)
-        this.viewTitle = response.data.levelTwoTestContent
+        this.viewTitle = response.data.levelTwoTestContent + "("+response.data.expectedValue+")"
       })
       this.viewOpen = true
 

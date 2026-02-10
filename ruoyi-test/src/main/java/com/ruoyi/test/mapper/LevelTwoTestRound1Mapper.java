@@ -66,9 +66,20 @@ public interface LevelTwoTestRound1Mapper
     public int deleteLevelTwoTestRound1ByIds(Long[] ids);
 
     /**
-     * 动态表名查询子表数据（支持二级用例ID筛选）
+     * 动态表名查询子表数据（支持分页）
      * @param childTableName 子表名（需白名单校验）
+     * @param offset 偏移量
+     * @param limit 每页大小
      * @return 子表数据列表
      */
-    List<Map<String, Object>> selectChildTableData(@Param("childTableName") String childTableName);
+    List<Map<String, Object>> selectChildTableData(@Param("childTableName") String childTableName,
+                                                    @Param("offset") int offset,
+                                                    @Param("limit") int limit);
+
+    /**
+     * 动态表名查询子表数据总数
+     * @param childTableName 子表名
+     * @return 总数
+     */
+    int selectChildTableDataCount(@Param("childTableName") String childTableName);
 }
