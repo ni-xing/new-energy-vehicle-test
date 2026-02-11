@@ -84,13 +84,15 @@
             @click="handleView(scope.row)"
             v-hasPermi="['test:levelTwoTest:list']"
           >查看</el-button>
+         
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['test:levelTwoTest:edit']"
-          >修改</el-button>
+            plain
+            icon="el-icon-data-analysis"
+            @click="handleChart(scope.row)"
+          >图表</el-button>
+     
           <el-button
             size="mini"
             type="text"
@@ -158,6 +160,17 @@
         <el-button @click="cancelView">关 闭</el-button>
       </div>
     </el-dialog>
+
+    <!-- 图表禁用提示对话框 -->
+    <el-dialog title="提示" :visible.sync="chartDialogVisible" width="400px" append-to-body>
+      <div style="text-align: center;">
+        <i class="el-icon-warning" style="color: #E6A23C; font-size: 24px; margin-right: 10px;"></i>
+        <span>{{ chartDialogMessage }}</span>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="chartDialogVisible = false">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -202,6 +215,9 @@ export default {
       open: false,
       // 查看：弹出层标题
       viewOpen: false,
+      // 图表禁用提示
+      chartDialogVisible: false,
+      chartDialogMessage: '',
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -380,6 +396,55 @@ export default {
       this.download('test/levelTwoTest/export', {
         ...this.queryParams
       }, `levelTwoTest_${new Date().getTime()}.xlsx`)
+    },
+    /** 图表按钮操作 */
+    handleChart(row) {
+      const childTableName = row.childTableName;
+      if (!childTableName) {
+        this.$message.warning('缺少子表名称');
+        return;
+      }
+
+      const params = {
+        pageNum: 1,
+        pageSize: 10
+      };
+
+      this.childLoading = true;
+      getChildTableData(childTableName, params).then(response => {
+        this.childLoading = false;
+        const dataList = response.rows || [];
+        
+        if (dataList.length === 0) {
+          this.$message.warning('暂无数据');
+          return;
+        }
+
+        // 检查测试值是否为字符类型
+        const firstMeasuredValue = dataList[0].measured_value;
+        const isCharValue = typeof firstMeasuredValue === 'string' && isNaN(Number(firstMeasuredValue));
+
+        if (isCharValue) {
+          // 字符类型，显示提示框
+          this.chartDialogMessage = '暂不支持展示该数据';
+          this.chartDialogVisible = true;
+        } else {
+          // 数值类型，跳转图表页面
+          const levelOneTestId = row.levelOneTestId || '';
+          const levelTwoTestId = row.levelTwoTestId || '';
+          this.$router.push({
+            path: `/chart/index/${levelOneTestId}/${levelTwoTestId}`,
+            query: {
+              childTableName: row.childTableName,
+              levelTwoTestContent: row.levelTwoTestContent,
+              expectedValue: row.expectedValue
+            }
+          });
+        }
+      }).catch(() => {
+        this.childLoading = false;
+        this.$message.error('获取数据失败');
+      });
     },
     // 表格行样式判断
     tableRowClassName({ row }) {

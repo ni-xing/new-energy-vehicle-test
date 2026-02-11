@@ -51,4 +51,3 @@ export function getChildTableData(childTableName, params) {
     params: params
   })
 }
-

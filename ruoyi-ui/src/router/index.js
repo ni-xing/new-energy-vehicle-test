@@ -101,6 +101,19 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/chart',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index/:levelOneTestId/:levelTwoTestId?',
+        component: () => import('@/views/chart/index'),
+        name: 'chart',
+        meta: {title: '图表', icon: ''}
+      }
+    ]
+  },
 ]
 
 // 动态路由，基于用户权限动态去加载
