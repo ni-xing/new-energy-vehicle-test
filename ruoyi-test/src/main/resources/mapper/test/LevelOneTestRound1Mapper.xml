@@ -81,4 +81,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             ( #{item.id}, #{item.levelTwoTestContent}, #{item.levelTwoTestId}, #{item.levelOneTestId})
         </foreach>
     </insert>
+
+    <select id="selectLevelTwoTestRound1List" resultType="com.ruoyi.test.domain.LevelTwoTestRound1">
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, child_table_name, expected_value
+        from level_two_test_round1
+        where level_one_test_id = #{id}
+    </select>
 </mapper>

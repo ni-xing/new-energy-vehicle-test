@@ -3,6 +3,7 @@ package com.ruoyi.test.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,16 +115,40 @@ public class LevelTwoTestRound1Controller extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('test:levelTwoTest:list')")
     @GetMapping(value = "/childtable/{childTableName}")
-    public TableDataInfo getChildTableData(@PathVariable("childTableName") String childTableName)
+    public TableDataInfo getChildTableData(@PathVariable("childTableName") String childTableName, HttpServletRequest request)
     {
-        List<Map<String, Object>> result = levelTwoTestRound1Service.getChildTableData(childTableName);
-        return getDataTable( result);
+        int pageNum = request.getParameter("pageNum") != null ? Integer.parseInt(request.getParameter("pageNum")) : 1;
+        int pageSize = request.getParameter("pageSize") != null ? Integer.parseInt(request.getParameter("pageSize")) : 10;
+        List<Map<String, Object>> result = levelTwoTestRound1Service.getChildTableData(childTableName, pageNum, pageSize);
+        int total = levelTwoTestRound1Service.getChildTableDataCount(childTableName);
+        TableDataInfo tableDataInfo = new TableDataInfo();
+        tableDataInfo.setRows(result);
+        tableDataInfo.setTotal(total);
+        return tableDataInfo;
     }
+
     /**
-     * 验证表名是否合法
+     * 更新子表行处理进度（process_progress 0～3）及 gmt_modified
      */
-    private boolean isValidTableName(String tableName) {
-        // 简单验证表名是否符合规范（只包含字母、数字、下划线，且以字母开头）
-        return tableName != null && tableName.matches("^[a-zA-Z][a-zA-Z0-9_]*$");
+    @PreAuthorize("@ss.hasPermi('test:levelTwoTest:list')")
+    @Log(title = "子表异常处理进度", businessType = BusinessType.UPDATE)
+    @PutMapping("/childtable/{childTableName}/progress")
+    public AjaxResult updateChildTableProgress(@PathVariable("childTableName") String childTableName,
+                                               @RequestBody Map<String, Object> body)
+    {
+        Object idObj = body != null ? body.get("id") : null;
+        Object ppObj = body != null ? body.get("processProgress") : null;
+        if (idObj == null || ppObj == null)
+        {
+            return error("参数 id、processProgress 不能为空");
+        }
+        Long rowId = Long.valueOf(idObj.toString());
+        int processProgress = Integer.parseInt(ppObj.toString());
+        int rows = levelTwoTestRound1Service.updateChildTableRowProgress(childTableName, rowId, processProgress);
+        if (rows == 0)
+        {
+            return error("未更新任何记录，请确认主键是否存在");
+        }
+        return success();
     }
 }

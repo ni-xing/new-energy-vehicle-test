@@ -35,6 +35,10 @@ public class LevelTwoTestRound1 extends BaseEntity
     @Excel(name = "对应子表表名")
     private String childTableName;
 
+    /** 对应预期值 */
+    @Excel(name = "对应预期值")
+    private String expectedValue;
+
     public void setId(Long id) 
     {
         this.id = id;
@@ -85,6 +89,13 @@ public class LevelTwoTestRound1 extends BaseEntity
         return childTableName;
     }
 
+    public void setExpectedValue(String expectedValue) {
+        this.expectedValue = expectedValue;
+    }
+    public String getExpectedValue() {
+        return expectedValue;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -93,6 +104,7 @@ public class LevelTwoTestRound1 extends BaseEntity
             .append("levelTwoTestId", getLevelTwoTestId())
             .append("levelOneTestId", getLevelOneTestId())
             .append("childTableName", getChildTableName())
+            .append("expectedValue", getExpectedValue())
             .toString();
     }
 }

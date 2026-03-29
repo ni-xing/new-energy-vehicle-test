@@ -44,10 +44,19 @@ export function delLevelTwoTest(id) {
 }
 
 // 根据子表名查询子表数据
-export function getChildTableData(childTableName) {
+export function getChildTableData(childTableName, params) {
   return request({
     url: '/test/levelTwoTest/childtable/' + childTableName,
-    method: 'get'
+    method: 'get',
+    params: params
   })
 }
 
+// 更新子表行处理进度 process_progress（0～3）及 gmt_modified
+export function updateChildTableProgress(childTableName, data) {
+  return request({
+    url: '/test/levelTwoTest/childtable/' + childTableName + '/progress',
+    method: 'put',
+    data: data
+  })
+}

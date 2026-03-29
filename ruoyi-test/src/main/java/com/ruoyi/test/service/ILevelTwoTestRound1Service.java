@@ -63,9 +63,28 @@ public interface ILevelTwoTestRound1Service
     public int deleteLevelTwoTestRound1ById(Long id);
 
     /**
-     * 查询子表数据（含白名单校验、业务逻辑扩展）
+     * 查询子表数据（含白名单校验、分页支持）
      * @param childTableName 子表名
+     * @param pageNum 页码
+     * @param pageSize 每页大小
      * @return 子表数据列表
      */
-    List<Map<String, Object>> getChildTableData(String childTableName);
+    List<Map<String, Object>> getChildTableData(String childTableName, int pageNum, int pageSize);
+
+    /**
+     * 查询子表数据总数
+     * @param childTableName 子表名
+     * @return 总数
+     */
+    int getChildTableDataCount(String childTableName);
+
+    /**
+     * 更新子表行处理进度（表名白名单校验）
+     *
+     * @param childTableName 子物理表名
+     * @param rowId          子表主键 id
+     * @param processProgress 0-3
+     * @return 影响行数
+     */
+    int updateChildTableRowProgress(String childTableName, Long rowId, int processProgress);
 }

@@ -84,20 +84,30 @@
             @click="handleView(scope.row)"
             v-hasPermi="['test:levelTwoTest:list']"
           >查看</el-button>
+
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['test:levelTwoTest:edit']"
-          >修改</el-button>
+            plain
+            icon="el-icon-data-analysis"
+            @click="handleChart(scope.row)"
+          >图表</el-button>
+
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['test:levelTwoTest:remove']"
-          >删除</el-button>
+            plain
+            icon="el-icon-warning"
+            @click="handleError(scope.row)"
+          >异常处理</el-button>
+
+<!--          <el-button-->
+<!--            size="mini"-->
+<!--            type="text"-->
+<!--            icon="el-icon-delete"-->
+<!--            @click="handleDelete(scope.row)"-->
+<!--            v-hasPermi="['test:levelTwoTest:remove']"-->
+<!--          >删除</el-button>-->
         </template>
       </el-table-column>
     </el-table>
@@ -130,7 +140,7 @@
     </el-dialog>
 
     <!-- 查看二级测试用例详情对话框 -->
-    <el-dialog :title="viewTitle" :visible.sync="viewOpen" width="500px" append-to-body @close="cancelView">
+    <el-dialog :title="viewTitle" :visible.sync="viewOpen" width="800px" append-to-body @close="cancelView">
       <el-form ref="viewForm" :model="form" label-width="80px">
         <el-table v-loading="childLoading"
                   :data="childTableData"
@@ -145,9 +155,28 @@
             </template>
           </el-table-column>
         </el-table>
+        <pagination
+          v-show="childTotal>0"
+          :total="childTotal"
+          :page.sync="childPageNum"
+          :limit.sync="childPageSize"
+          @pagination="handleChildPagination"
+          style="margin-top: 10px;"
+        />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancelView">关 闭</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 图表禁用提示对话框 -->
+    <el-dialog title="提示" :visible.sync="chartDialogVisible" width="400px" append-to-body>
+      <div style="text-align: center;">
+        <i class="el-icon-warning" style="color: #E6A23C; font-size: 24px; margin-right: 10px;"></i>
+        <span>{{ chartDialogMessage }}</span>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="chartDialogVisible = false">确 定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -180,6 +209,12 @@ export default {
       childLoading: false,
       //子表数据
       childTableData: [],
+      // 子表总条数
+      childTotal: 0,
+      // 子表页码
+      childPageNum: 1,
+      // 子表每页大小
+      childPageSize: 10,
       // 弹出层标题
       title: "",
       // 查看：弹出层标题
@@ -188,14 +223,17 @@ export default {
       open: false,
       // 查看：弹出层标题
       viewOpen: false,
+      // 图表禁用提示
+      chartDialogVisible: false,
+      chartDialogMessage: '',
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        levelTwoTestContent: null,
         levelTwoTestId: null,
         levelOneTestId: null,
-        childTableName: null
+        levelTwoTestContent: null,
+        childTableName: null,
       },
       // 表单参数
       form: {},
@@ -243,14 +281,24 @@ export default {
         this.$message.warning("子表名为空，无法查询");
         return;
       }
-      // 调用接口时传入子表名和二级用例ID（关键：补充levelTwoTestId参数）
-      getChildTableData(childTableName,).then(response => {
-        this.childTableData = response.rows || []// 兼容接口返回格式
-        this.childLoading = false; // 关闭加载状态
+      this.childLoading = true;
+      const params = {
+        pageNum: this.childPageNum,
+        pageSize: this.childPageSize
+      }
+      // 调用接口时传入子表名和分页参数
+      getChildTableData(childTableName, params).then(response => {
+        this.childTableData = response.rows || []
+        this.childTotal = response.total || 0
+        this.childLoading = false
       }).catch(() => {
-        this.childLoading = false; // 异常时也关闭加载状态
-        this.$message.error("查询子表数据失败");
+        this.childLoading = false
+        this.$message.error("查询子表数据失败")
       });
+    },
+    /** 子表分页事件处理 */
+    handleChildPagination() {
+      this.getDetailData(this.currentChildTableName)
     },
     // 取消按钮
     cancel() {
@@ -261,6 +309,8 @@ export default {
       this.viewOpen = false;
       this.childTableData = []; // 清空子表数据
       this.currentChildTableName = ""; // 清空缓存的子表名
+      this.childPageNum = 1; // 重置子表页码
+      this.childTotal = 0; // 重置子表总数
       this.reset();
     },
     // 表单重置
@@ -314,7 +364,7 @@ export default {
         this.form = response.data
         this.currentChildTableName = response.data.childTableName
         this.getDetailData(this.currentChildTableName)
-        this.viewTitle = response.data.levelTwoTestContent
+        this.viewTitle = response.data.levelTwoTestContent + "("+response.data.expectedValue+")"
       })
       this.viewOpen = true
 
@@ -355,6 +405,55 @@ export default {
         ...this.queryParams
       }, `levelTwoTest_${new Date().getTime()}.xlsx`)
     },
+    /** 图表按钮操作 */
+    handleChart(row) {
+      const childTableName = row.childTableName;
+      if (!childTableName) {
+        this.$message.warning('缺少子表名称');
+        return;
+      }
+
+      const params = {
+        pageNum: 1,
+        pageSize: 10
+      };
+
+      this.childLoading = true;
+      getChildTableData(childTableName, params).then(response => {
+        this.childLoading = false;
+        const dataList = response.rows || [];
+
+        if (dataList.length === 0) {
+          this.$message.warning('暂无数据');
+          return;
+        }
+
+        // 检查测试值是否为字符类型
+        const firstMeasuredValue = dataList[0].measured_value;
+        const isCharValue = typeof firstMeasuredValue === 'string' && isNaN(Number(firstMeasuredValue));
+
+        if (isCharValue) {
+          // 字符类型，显示提示框
+          this.chartDialogMessage = '暂不支持展示该数据';
+          this.chartDialogVisible = true;
+        } else {
+          // 数值类型，跳转图表页面
+          const levelOneTestId = row.levelOneTestId || '';
+          const levelTwoTestId = row.levelTwoTestId || '';
+          this.$router.push({
+            path: `/chart/index/${levelOneTestId}/${levelTwoTestId}`,
+            query: {
+              childTableName: row.childTableName,
+              levelTwoTestContent: row.levelTwoTestContent,
+              expectedValue: row.expectedValue
+            }
+          });
+        }
+      }).catch(() => {
+        this.childLoading = false;
+        this.$message.error('获取数据失败');
+      });
+    },
     // 表格行样式判断
     tableRowClassName({ row }) {
       // 判断：如果qualified为false（不合格），返回自定义样式类
@@ -364,6 +463,45 @@ export default {
       // 合格/未填写的行返回空，使用默认样式
       return '';
     },
+    /** 异常处理按钮操作（与图表跳转一致：先校验子表并拉取数据，再进入页面） */
+    handleError(row) {
+      const childTableName = row.childTableName;
+      if (!childTableName) {
+        this.$message.warning('缺少子表名称');
+        return;
+      }
+
+      const params = {
+        pageNum: 1,
+        pageSize: 10
+      };
+
+      this.childLoading = true;
+      getChildTableData(childTableName, params).then(response => {
+        this.childLoading = false;
+        const dataList = response.rows || [];
+
+        if (dataList.length === 0) {
+          this.$message.warning('暂无数据');
+          return;
+        }
+
+        const levelOneTestId = row.levelOneTestId || '';
+        const levelTwoTestId = row.levelTwoTestId || '';
+        this.$router.push({
+          path: `/test/error/${levelOneTestId}/${levelTwoTestId}`,
+          query: {
+            childTableName: row.childTableName,
+            levelTwoTestContent: row.levelTwoTestContent,
+            expectedValue: row.expectedValue
+          }
+        });
+      }).catch(() => {
+        this.childLoading = false;
+        this.$message.error('获取数据失败');
+      });
+    }
+
   }
 }
 </script>

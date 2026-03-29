@@ -10,10 +10,11 @@
         <result property="levelTwoTestId"    column="level_two_test_id"    />
         <result property="levelOneTestId"    column="level_one_test_id"    />
         <result property="childTableName"    column="child_table_name"    />
+        <result property="expectedValue"    column="expected_value"    />
     </resultMap>
 
     <sql id="selectLevelTwoTestRound1Vo">
-        select id, level_two_test_content, level_two_test_id, level_one_test_id, child_table_name from level_two_test_round1
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, child_table_name, expected_value from level_two_test_round1
     </sql>
 
     <select id="selectLevelTwoTestRound1List" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1" resultMap="LevelTwoTestRound1Result">
@@ -23,6 +24,7 @@
             <if test="levelTwoTestId != null "> and level_two_test_id = #{levelTwoTestId}</if>
             <if test="levelOneTestId != null "> and level_one_test_id = #{levelOneTestId}</if>
             <if test="childTableName != null  and childTableName != ''"> and child_table_name = #{childTableName}</if>
+            <if test="expectedValue != null  and expectedValue != ''"> and expected_value = #{expectedValue}</if>
         </where>
     </select>
 
@@ -33,7 +35,20 @@
 
     <select id="selectChildTableData" resultType="java.util.Map">
         SELECT * FROM ${childTableName}
+        LIMIT #{offset}, #{limit}
     </select>
+
+    <select id="selectChildTableDataCount" resultType="int">
+        SELECT COUNT(*) FROM ${childTableName}
+    </select>
+
+    <!-- 更新子表行：处理进度、修改时间（表名须已通过白名单校验） -->
+    <update id="updateChildTableRowProgress">
+        UPDATE ${childTableName}
+        SET process_progress = #{processProgress},
+            gmt_modified = NOW()
+        WHERE id = #{rowId}
+    </update>
 
     <insert id="insertLevelTwoTestRound1" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1" useGeneratedKeys="true" keyProperty="id">
         insert into level_two_test_round1
@@ -42,12 +57,14 @@
             <if test="levelTwoTestId != null">level_two_test_id,</if>
             <if test="levelOneTestId != null">level_one_test_id,</if>
             <if test="childTableName != null and childTableName != ''">child_table_name,</if>
+            <if test="expectedValue != null and expectedValue != ''">expected_value,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">#{levelTwoTestContent},</if>
             <if test="levelTwoTestId != null">#{levelTwoTestId},</if>
             <if test="levelOneTestId != null">#{levelOneTestId},</if>
             <if test="childTableName != null and childTableName != ''">#{childTableName},</if>
+            <if test="expectedValue != null and expectedValue != ''">#{expectedValue},</if>
         </trim>
     </insert>
 
@@ -58,6 +75,7 @@
             <if test="levelTwoTestId != null">level_two_test_id = #{levelTwoTestId},</if>
             <if test="levelOneTestId != null">level_one_test_id = #{levelOneTestId},</if>
             <if test="childTableName != null and childTableName != ''">child_table_name = #{childTableName},</if>
+            <if test="expectedValue != null and expectedValue != ''">expected_value = #{expectedValue},</if>
         </trim>
         where id = #{id}
     </update>
