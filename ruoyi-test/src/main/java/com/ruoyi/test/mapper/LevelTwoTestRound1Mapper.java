@@ -82,4 +82,11 @@ public interface LevelTwoTestRound1Mapper
      * @return 总数
      */
     int selectChildTableDataCount(@Param("childTableName") String childTableName);
+
+    /**
+     * 更新子表指定行的处理进度（0-未处理 1-处理中 2-已处理 3-无法处理）及修改时间
+     */
+    int updateChildTableRowProgress(@Param("childTableName") String childTableName,
+                                    @Param("rowId") Long rowId,
+                                    @Param("processProgress") int processProgress);
 }

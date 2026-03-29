@@ -42,6 +42,14 @@
         SELECT COUNT(*) FROM ${childTableName}
     </select>
 
+    <!-- 更新子表行：处理进度、修改时间（表名须已通过白名单校验） -->
+    <update id="updateChildTableRowProgress">
+        UPDATE ${childTableName}
+        SET process_progress = #{processProgress},
+            gmt_modified = NOW()
+        WHERE id = #{rowId}
+    </update>
+
     <insert id="insertLevelTwoTestRound1" parameterType="com.ruoyi.test.domain.LevelTwoTestRound1" useGeneratedKeys="true" keyProperty="id">
         insert into level_two_test_round1
         <trim prefix="(" suffix=")" suffixOverrides=",">

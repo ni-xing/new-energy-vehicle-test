@@ -84,7 +84,7 @@
             @click="handleView(scope.row)"
             v-hasPermi="['test:levelTwoTest:list']"
           >查看</el-button>
-         
+
           <el-button
             size="mini"
             type="text"
@@ -92,14 +92,22 @@
             icon="el-icon-data-analysis"
             @click="handleChart(scope.row)"
           >图表</el-button>
-     
+
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['test:levelTwoTest:remove']"
-          >删除</el-button>
+            plain
+            icon="el-icon-warning"
+            @click="handleError(scope.row)"
+          >异常处理</el-button>
+
+<!--          <el-button-->
+<!--            size="mini"-->
+<!--            type="text"-->
+<!--            icon="el-icon-delete"-->
+<!--            @click="handleDelete(scope.row)"-->
+<!--            v-hasPermi="['test:levelTwoTest:remove']"-->
+<!--          >删除</el-button>-->
         </template>
       </el-table-column>
     </el-table>
@@ -414,7 +422,7 @@ export default {
       getChildTableData(childTableName, params).then(response => {
         this.childLoading = false;
         const dataList = response.rows || [];
-        
+
         if (dataList.length === 0) {
           this.$message.warning('暂无数据');
           return;
@@ -455,6 +463,45 @@ export default {
       // 合格/未填写的行返回空，使用默认样式
       return '';
     },
+    /** 异常处理按钮操作（与图表跳转一致：先校验子表并拉取数据，再进入页面） */
+    handleError(row) {
+      const childTableName = row.childTableName;
+      if (!childTableName) {
+        this.$message.warning('缺少子表名称');
+        return;
+      }
+
+      const params = {
+        pageNum: 1,
+        pageSize: 10
+      };
+
+      this.childLoading = true;
+      getChildTableData(childTableName, params).then(response => {
+        this.childLoading = false;
+        const dataList = response.rows || [];
+
+        if (dataList.length === 0) {
+          this.$message.warning('暂无数据');
+          return;
+        }
+
+        const levelOneTestId = row.levelOneTestId || '';
+        const levelTwoTestId = row.levelTwoTestId || '';
+        this.$router.push({
+          path: `/test/error/${levelOneTestId}/${levelTwoTestId}`,
+          query: {
+            childTableName: row.childTableName,
+            levelTwoTestContent: row.levelTwoTestContent,
+            expectedValue: row.expectedValue
+          }
+        });
+      }).catch(() => {
+        this.childLoading = false;
+        this.$message.error('获取数据失败');
+      });
+    }
+
   }
 }
 </script>

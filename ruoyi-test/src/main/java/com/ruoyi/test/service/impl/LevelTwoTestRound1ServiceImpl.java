@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.test.mapper.LevelTwoTestRound1Mapper;
 import com.ruoyi.test.domain.LevelTwoTestRound1;
 import com.ruoyi.test.service.ILevelTwoTestRound1Service;
@@ -119,6 +120,32 @@ public class LevelTwoTestRound1ServiceImpl implements ILevelTwoTestRound1Service
         } catch (Exception e) {
             log.error("查询子表{}总数失败", childTableName, e);
             return 0;
+        }
+    }
+
+    /**
+     * 子表物理表名白名单：字母开头，仅字母数字下划线（与 report1_1_1_xxx 等一致）
+     */
+    private boolean isValidChildTableName(String tableName) {
+        return tableName != null && tableName.matches("^[a-zA-Z][a-zA-Z0-9_]*$");
+    }
+
+    @Override
+    public int updateChildTableRowProgress(String childTableName, Long rowId, int processProgress) {
+        if (!isValidChildTableName(childTableName)) {
+            throw new ServiceException("非法子表名称");
+        }
+        if (rowId == null) {
+            throw new ServiceException("记录主键不能为空");
+        }
+        if (processProgress < 0 || processProgress > 3) {
+            throw new ServiceException("处理进度仅支持 0～3");
+        }
+        try {
+            return levelTwoTestRound1Mapper.updateChildTableRowProgress(childTableName, rowId, processProgress);
+        } catch (Exception e) {
+            log.error("更新子表{}处理进度失败, rowId={}", childTableName, rowId, e);
+            throw new ServiceException("更新处理进度失败：" + e.getMessage());
         }
     }
 }

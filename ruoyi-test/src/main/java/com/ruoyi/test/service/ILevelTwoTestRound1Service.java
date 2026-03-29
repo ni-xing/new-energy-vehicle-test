@@ -77,4 +77,14 @@ public interface ILevelTwoTestRound1Service
      * @return 总数
      */
     int getChildTableDataCount(String childTableName);
+
+    /**
+     * 更新子表行处理进度（表名白名单校验）
+     *
+     * @param childTableName 子物理表名
+     * @param rowId          子表主键 id
+     * @param processProgress 0-3
+     * @return 影响行数
+     */
+    int updateChildTableRowProgress(String childTableName, Long rowId, int processProgress);
 }

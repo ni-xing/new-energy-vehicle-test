@@ -98,6 +98,12 @@ export const constantRoutes = [
         component: () => import('@/views/test/firstTest/levelTwoTest/index'),
         name: 'levelTwoTest',
         meta: {title: '二级测试项目目录', icon: ''}
+      },
+      {
+        path: 'error/:levelOneTestId/:levelTwoTestId?',
+        component:()=> import('@/views/test/error'),
+        name: 'error',
+        meta: {title: '异常处理',icon: ''}
       }
     ]
   },

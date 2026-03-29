@@ -51,3 +51,12 @@ export function getChildTableData(childTableName, params) {
     params: params
   })
 }
+
+// 更新子表行处理进度 process_progress（0～3）及 gmt_modified
+export function updateChildTableProgress(childTableName, data) {
+  return request({
+    url: '/test/levelTwoTest/childtable/' + childTableName + '/progress',
+    method: 'put',
+    data: data
+  })
+}
