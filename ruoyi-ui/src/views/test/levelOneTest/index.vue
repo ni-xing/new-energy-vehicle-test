@@ -23,7 +23,7 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
-          v-hasPermi="['test:firstTest:add']"
+          v-hasPermi="['test:levelOneTest:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -34,7 +34,7 @@
           size="mini"
           :disabled="single"
           @click="handleUpdate"
-          v-hasPermi="['test:firstTest:edit']"
+          v-hasPermi="['test:levelOneTest:edit']"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -45,7 +45,7 @@
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['test:firstTest:remove']"
+          v-hasPermi="['test:levelOneTest:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -55,13 +55,13 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-          v-hasPermi="['test:firstTest:export']"
+          v-hasPermi="['test:levelOneTest:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="firstTestList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="levelOneTestList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="自增主键" align="center" prop="id" />
       <el-table-column label="一级测试项目名称" align="center">
@@ -77,14 +77,14 @@
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['test:firstTest:edit']"
+            v-hasPermi="['test:levelOneTest:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['test:firstTest:remove']"
+            v-hasPermi="['test:levelOneTest:remove']"
           >删除</el-button>
         </template>
       </el-table-column>
@@ -110,13 +110,13 @@
         <el-divider content-position="center">二级测试项目信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAddLevelTwoTestRound1">添加</el-button>
+            <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAddLevelTwoTest">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteLevelTwoTestRound1">删除</el-button>
+            <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteLevelTwoTest">删除</el-button>
           </el-col>
         </el-row>
-        <el-table :data="levelTwoTestRound1List" :row-class-name="rowLevelTwoTestRound1Index" @selection-change="handleLevelTwoTestRound1SelectionChange" ref="levelTwoTestRound1">
+        <el-table :data="levelTwoTestList" :row-class-name="rowLevelTwoTestIndex" @selection-change="handleLevelTwoTestSelectionChange" ref="levelTwoTest">
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="二级测试项目ID" prop="levelTwoTestId" width="150">
@@ -135,18 +135,20 @@
 </template>
 
 <script>
-import { listFirstTest, getFirstTest, delFirstTest, addFirstTest, updateFirstTest, goToDetail } from "@/api/test/firstTest"
+import { listLevelOneTest, getLevelOneTest, delLevelOneTest, addLevelOneTest, updateLevelOneTest } from "@/api/test/levelOneTest"
 
 export default {
-  name: "FirstTest",
+  name: "LevelOneTest",
   data() {
     return {
+      // 当前测试轮次（1=第一次测试，2=第二次测试）
+      currentRound: 1,
       // 遮罩层
       loading: true,
       // 选中数组
       ids: [],
       // 子表选中数据
-      checkedLevelTwoTestRound1: [],
+      checkedLevelTwoTestList: [],
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -155,10 +157,10 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      // 一级测试用例（第一轮测试）表格数据
-      firstTestList: [],
-      // 二级测试用例（第一轮测试）表格数据
-      levelTwoTestRound1List: [],
+      // 一级测试用例表格数据
+      levelOneTestList: [],
+      // 二级测试用例表格数据
+      levelTwoTestList: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -168,7 +170,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         levelOneTestContent: null,
-        levelOneTestId: null
+        levelOneTestId: null,
+        testRound: null
       },
       // 表单参数
       form: {},
@@ -184,14 +187,30 @@ export default {
     }
   },
   created() {
+    this.initRound()
     this.getList()
   },
+  watch: {
+    '$route.query.round': {
+      immediate: false,
+      handler() {
+        this.initRound()
+        this.getList()
+      }
+    }
+  },
   methods: {
+    initRound() {
+      const round = Number(this.$route.query.round)
+      this.currentRound = Number.isFinite(round) && round > 0 ? round : 1
+      this.queryParams.testRound = this.currentRound
+    },
     /** 查询一级测试项目列表 */
     getList() {
+      this.queryParams.testRound = this.currentRound
       this.loading = true
-      listFirstTest(this.queryParams).then(response => {
-        this.firstTestList = response.rows
+      listLevelOneTest(this.queryParams).then(response => {
+        this.levelOneTestList = response.rows
         this.total = response.total
         this.loading = false
       })
@@ -206,9 +225,10 @@ export default {
       this.form = {
         id: null,
         levelOneTestContent: null,
-        levelOneTestId: null
+        levelOneTestId: null,
+        testRound: this.currentRound
       }
-      this.levelTwoTestRound1List = []
+      this.levelTwoTestList = []
       this.resetForm("form")
     },
     /** 搜索按钮操作 */
@@ -237,9 +257,10 @@ export default {
     handleUpdate(row) {
       this.reset()
       const id = row.id || this.ids
-      getFirstTest(id).then(response => {
+      getLevelOneTest(id).then(response => {
         this.form = response.data
-        this.levelTwoTestRound1List = response.data.levelTwoTestRound1List
+        this.form.testRound = this.currentRound
+        this.levelTwoTestList = response.data.levelTwoTestList || []
         this.open = true
         this.title = "修改一级测试项目"
       })
@@ -248,15 +269,16 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.levelTwoTestRound1List = this.levelTwoTestRound1List
+          this.form.testRound = this.currentRound
+          this.form.levelTwoTestList = this.levelTwoTestList
           if (this.form.id != null) {
-            updateFirstTest(this.form).then(response => {
+            updateLevelOneTest(this.form).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addFirstTest(this.form).then(response => {
+            addLevelOneTest(this.form).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -269,51 +291,52 @@ export default {
     handleDelete(row) {
       const ids = row.id || this.ids
       this.$modal.confirm('是否确认删除一级测试项目 编号为"' + ids + '"的数据项？').then(function() {
-        return delFirstTest(ids)
+        return delLevelOneTest(ids)
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess("删除成功")
       }).catch(() => {})
     },
 	/** 二级测试用例（第一轮测试）序号 */
-    rowLevelTwoTestRound1Index({ row, rowIndex }) {
+    rowLevelTwoTestIndex({ row, rowIndex }) {
       row.index = rowIndex + 1
     },
     /** 二级测试项目添加按钮操作 */
-    handleAddLevelTwoTestRound1() {
+    handleAddLevelTwoTest() {
       let obj = {}
       obj.levelTwoTestContent = ""
       obj.levelTwoTestId = ""
-      this.levelTwoTestRound1List.push(obj)
+      this.levelTwoTestList.push(obj)
     },
     /** 二级测试项目删除按钮操作 */
-    handleDeleteLevelTwoTestRound1() {
-      if (this.checkedLevelTwoTestRound1.length == 0) {
+    handleDeleteLevelTwoTest() {
+      if (this.checkedLevelTwoTestList.length == 0) {
         this.$modal.msgError("请先选择要删除的二级测试项目数据")
       } else {
-        const levelTwoTestRound1List = this.levelTwoTestRound1List
-        const checkedLevelTwoTestRound1 = this.checkedLevelTwoTestRound1
-        this.levelTwoTestRound1List = levelTwoTestRound1List.filter(function(item) {
-          return checkedLevelTwoTestRound1.indexOf(item.index) == -1
+        const levelTwoTestList = this.levelTwoTestList
+        const checkedLevelTwoTestList = this.checkedLevelTwoTestList
+        this.levelTwoTestList = levelTwoTestList.filter(function(item) {
+          return checkedLevelTwoTestList.indexOf(item.index) == -1
         })
       }
     },
     /** 复选框选中数据 */
-    handleLevelTwoTestRound1SelectionChange(selection) {
-      this.checkedLevelTwoTestRound1 = selection.map(item => item.index)
+    handleLevelTwoTestSelectionChange(selection) {
+      this.checkedLevelTwoTestList = selection.map(item => item.index)
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('test/firstTest/export', {
+      this.download('test/levelOneTest/export', {
         ...this.queryParams
-      }, `firstTest_${new Date().getTime()}.xlsx`)
+      }, `levelOneTest_${new Date().getTime()}.xlsx`)
     },
     /** 跳转二级测试目录页面 */
     handleGoToDetail(row) {
         this.$router.push({
-          path: '/test/firstTest/levelTwoTest/index',
+          path: '/test/levelOneTest/levelTwoTest/index',
           query: {
-            levelOneTestId: row.id
+            levelOneTestId: row.levelOneTestId,
+            round: this.currentRound
           }
         })
     }

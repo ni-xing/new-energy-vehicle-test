@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.test.mapper.LevelOneTestMapper">
+
+    <resultMap type="com.ruoyi.test.domain.LevelOneTest" id="LevelOneTestResult">
+        <result property="id" column="id" />
+        <result property="levelOneTestContent" column="level_one_test_content" />
+        <result property="levelOneTestId" column="level_one_test_id" />
+        <result property="testRound" column="test_round" />
+    </resultMap>
+
+    <resultMap id="LevelOneTestLevelTwoTestResult" type="com.ruoyi.test.domain.LevelOneTest" extends="LevelOneTestResult">
+        <collection
+            property="levelTwoTestList"
+            ofType="com.ruoyi.test.domain.LevelTwoTest"
+            column="{levelOneTestId=id,testRound=test_round}"
+            select="selectLevelTwoTestListByLevelOneId" />
+    </resultMap>
+
+    <sql id="selectLevelOneTestVo">
+        select id, level_one_test_content, level_one_test_id, test_round from level_one_test
+    </sql>
+
+    <select id="selectLevelOneTestList" parameterType="com.ruoyi.test.domain.LevelOneTest" resultMap="LevelOneTestResult">
+        <include refid="selectLevelOneTestVo"/>
+        <where>
+            <if test="levelOneTestContent != null and levelOneTestContent != ''">and level_one_test_content = #{levelOneTestContent}</if>
+            <if test="levelOneTestId != null">and level_one_test_id = #{levelOneTestId}</if>
+            <if test="testRound != null">and test_round = #{testRound}</if>
+        </where>
+    </select>
+
+    <select id="selectLevelOneTestById" parameterType="Long" resultMap="LevelOneTestLevelTwoTestResult">
+        select id, level_one_test_content, level_one_test_id, test_round
+        from level_one_test
+        where id = #{id}
+    </select>
+
+    <insert id="insertLevelOneTest" parameterType="com.ruoyi.test.domain.LevelOneTest" useGeneratedKeys="true" keyProperty="id">
+        insert into level_one_test
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="levelOneTestContent != null and levelOneTestContent != ''">level_one_test_content,</if>
+            <if test="levelOneTestId != null">level_one_test_id,</if>
+            <if test="testRound != null">test_round,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="levelOneTestContent != null and levelOneTestContent != ''">#{levelOneTestContent},</if>
+            <if test="levelOneTestId != null">#{levelOneTestId},</if>
+            <if test="testRound != null">#{testRound},</if>
+        </trim>
+    </insert>
+
+    <update id="updateLevelOneTest" parameterType="com.ruoyi.test.domain.LevelOneTest">
+        update level_one_test
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="levelOneTestContent != null and levelOneTestContent != ''">level_one_test_content = #{levelOneTestContent},</if>
+            <if test="levelOneTestId != null">level_one_test_id = #{levelOneTestId},</if>
+            <if test="testRound != null">test_round = #{testRound},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteLevelOneTestById" parameterType="Long">
+        delete from level_one_test where id = #{id}
+    </delete>
+
+    <delete id="deleteLevelOneTestByIds" parameterType="String">
+        delete from level_one_test where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteLevelTwoTestByLevelOneTestIds" parameterType="String">
+        delete from level_two_test where level_one_test_id in
+        <foreach item="levelOneTestId" collection="array" open="(" separator="," close=")">
+            #{levelOneTestId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteLevelTwoTestByLevelOneTestId" parameterType="Long">
+        delete from level_two_test where level_one_test_id = #{levelOneTestId}
+    </delete>
+
+    <insert id="batchLevelTwoTest">
+        insert into level_two_test(id, level_two_test_content, level_two_test_id, level_one_test_id, test_round) values
+        <foreach item="item" collection="list" separator=",">
+            (#{item.id}, #{item.levelTwoTestContent}, #{item.levelTwoTestId}, #{item.levelOneTestId}, #{item.testRound})
+        </foreach>
+    </insert>
+
+    <select id="selectLevelTwoTestListByLevelOneId" parameterType="map" resultType="com.ruoyi.test.domain.LevelTwoTest">
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, test_round, child_table_name, expected_value
+        from level_two_test
+        where level_one_test_id = #{levelOneTestId}
+          and test_round = #{testRound}
+    </select>
+</mapper>

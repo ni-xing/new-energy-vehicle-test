@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.test.mapper.LevelTwoTestMapper">
+
+    <resultMap type="com.ruoyi.test.domain.LevelTwoTest" id="LevelTwoTestResult">
+        <result property="id" column="id" />
+        <result property="levelTwoTestContent" column="level_two_test_content" />
+        <result property="levelTwoTestId" column="level_two_test_id" />
+        <result property="levelOneTestId" column="level_one_test_id" />
+        <result property="testRound" column="test_round" />
+        <result property="expectedValue" column="expected_value" />
+    </resultMap>
+
+    <sql id="selectLevelTwoTestVo">
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, test_round, expected_value from level_two_test
+    </sql>
+
+    <select id="selectLevelTwoTestList" parameterType="com.ruoyi.test.domain.LevelTwoTest" resultMap="LevelTwoTestResult">
+        <include refid="selectLevelTwoTestVo"/>
+        <where>
+            <if test="levelTwoTestContent != null and levelTwoTestContent != ''">and level_two_test_content = #{levelTwoTestContent}</if>
+            <if test="levelTwoTestId != null">and level_two_test_id = #{levelTwoTestId}</if>
+            <if test="levelOneTestId != null">and level_one_test_id = #{levelOneTestId}</if>
+            <if test="testRound != null">and test_round = #{testRound}</if>
+            <if test="expectedValue != null and expectedValue != ''">and expected_value = #{expectedValue}</if>
+        </where>
+    </select>
+
+    <select id="selectLevelTwoTestById" parameterType="Long" resultMap="LevelTwoTestResult">
+        <include refid="selectLevelTwoTestVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertLevelTwoTest" parameterType="com.ruoyi.test.domain.LevelTwoTest" useGeneratedKeys="true" keyProperty="id">
+        insert into level_two_test
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content,</if>
+            <if test="levelTwoTestId != null">level_two_test_id,</if>
+            <if test="levelOneTestId != null">level_one_test_id,</if>
+            <if test="testRound != null">test_round,</if>
+            <if test="expectedValue != null and expectedValue != ''">expected_value,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="levelTwoTestContent != null and levelTwoTestContent != ''">#{levelTwoTestContent},</if>
+            <if test="levelTwoTestId != null">#{levelTwoTestId},</if>
+            <if test="levelOneTestId != null">#{levelOneTestId},</if>
+            <if test="testRound != null">#{testRound},</if>
+            <if test="expectedValue != null and expectedValue != ''">#{expectedValue},</if>
+        </trim>
+    </insert>
+
+    <update id="updateLevelTwoTest" parameterType="com.ruoyi.test.domain.LevelTwoTest">
+        update level_two_test
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content = #{levelTwoTestContent},</if>
+            <if test="levelTwoTestId != null">level_two_test_id = #{levelTwoTestId},</if>
+            <if test="levelOneTestId != null">level_one_test_id = #{levelOneTestId},</if>
+            <if test="testRound != null">test_round = #{testRound},</if>
+            <if test="expectedValue != null and expectedValue != ''">expected_value = #{expectedValue},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteLevelTwoTestById" parameterType="Long">
+        delete from level_two_test where id = #{id}
+    </delete>
+
+    <delete id="deleteLevelTwoTestByIds" parameterType="String">
+        delete from level_two_test where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

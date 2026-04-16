@@ -9,14 +9,6 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="关联一级测试用例" prop="levelOneTestId">
-        <el-input
-          v-model="queryParams.levelOneTestId"
-          placeholder="请输入关联一级测试用例"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -145,13 +137,12 @@
         <el-table v-loading="childLoading"
                   :data="childTableData"
                   border
-                  :row-class-name="tableRowClassName"
-                  @selection-change="handleSelectionChange">
+                  :row-class-name="tableRowClassName">
           <el-table-column label="自增主键" align="center" prop="id" />
           <el-table-column label="测试值" align="center" prop="measured_value"/>
-          <el-table-column label="是否合格" align="center" prop="qualified" >
+          <el-table-column label="是否合格" align="center" prop="isQualified">
             <template slot-scope="scope">
-              {{ scope.row.qualified === true ? '合格' : (scope.row.qualified === false ? '不合格' : '未填写') }}
+              {{ scope.row.isQualified === 1 ? '合格' : '不合格' }}
             </template>
           </el-table-column>
         </el-table>
@@ -183,12 +174,15 @@
 </template>
 
 <script>
-import { listLevelTwoTest, getLevelTwoTest, delLevelTwoTest, addLevelTwoTest, updateLevelTwoTest,getChildTableData } from "@/api/test/levelTwoTest"
+import { listLevelTwoTest, getLevelTwoTest, delLevelTwoTest, addLevelTwoTest, updateLevelTwoTest } from "@/api/test/levelTwoTest"
+import { listTestData } from "@/api/test/testData"
 
 export default {
   name: "LevelTwoTest",
   data() {
     return {
+      // 当前测试轮次（1=第一次测试，2=第二次测试）
+      currentRound: 1,
       // 遮罩层
       loading: true,
       // 选中数组
@@ -203,17 +197,15 @@ export default {
       total: 0,
       // 二级测试用例（第一轮测试）表格数据
       levelTwoTestList: [],
-      // 新增：缓存当前子表名
-      currentChildTableName: "",
-      // 新增：子表加载状态
+      // 查看加载状态
       childLoading: false,
-      //子表数据
+      // 测试数据
       childTableData: [],
-      // 子表总条数
+      // 数据总条数
       childTotal: 0,
-      // 子表页码
+      // 当前页码
       childPageNum: 1,
-      // 子表每页大小
+      // 每页大小
       childPageSize: 10,
       // 弹出层标题
       title: "",
@@ -233,7 +225,7 @@ export default {
         levelTwoTestId: null,
         levelOneTestId: null,
         levelTwoTestContent: null,
-        childTableName: null,
+        testRound: null,
       },
       // 表单参数
       form: {},
@@ -253,20 +245,31 @@ export default {
   },
   watch: {
     '$route.query.levelOneTestId': {
-      immediate: true, // 组件挂载时立即执行一次
-      handler(newVal) {
-        if (newVal) {
-          this.queryParams.levelOneTestId = newVal
-          this.getList() // 每次参数变化时调用list
-        }
+      immediate: true,
+      handler() {
+        this.initRouteParams()
+        this.getList()
+      }
+    },
+    '$route.query.round': {
+      immediate: true,
+      handler() {
+        this.initRouteParams()
+        this.getList()
       }
     }
   },
 
   methods: {
-    /** 查询二级测试用例（第一轮测试）列表 */
-    getList() {
+    initRouteParams() {
       this.queryParams.levelOneTestId = this.$route.query.levelOneTestId
+      const round = Number(this.$route.query.round)
+      this.currentRound = Number.isFinite(round) && round > 0 ? round : 1
+      this.queryParams.testRound = this.currentRound
+    },
+    /** 查询二级测试用例列表 */
+    getList() {
+      this.initRouteParams()
       this.loading = true
       listLevelTwoTest(this.queryParams).then(response => {
         this.levelTwoTestList = response.rows
@@ -274,31 +277,30 @@ export default {
         this.loading = false
       })
     },
-    /** 获取子表数据 */
-    getDetailData(childTableName) {
-      if (!childTableName ) {
-        this.childLoading = false;
-        this.$message.warning("子表名为空，无法查询");
-        return;
+    getDetailData(levelTwoTestContent) {
+      if (!levelTwoTestContent) {
+        this.childLoading = false
+        this.$message.warning("测试项名称为空，无法查询")
+        return
       }
-      this.childLoading = true;
-      const params = {
-        pageNum: this.childPageNum,
-        pageSize: this.childPageSize
-      }
-      // 调用接口时传入子表名和分页参数
-      getChildTableData(childTableName, params).then(response => {
-        this.childTableData = response.rows || []
+      this.childLoading = true
+      listTestData({ levelTwoTestContent, pageNum: this.childPageNum, pageSize: this.childPageSize }).then(response => {
+        this.childTableData = (response.rows || []).map(item => ({
+          ...item,
+          measured_value: item.measureValue,
+          qualifiedText: item.isQualified === 1 ? '合格' : '不合格',
+          rowClassName: item.isQualified === 1 ? '' : 'row-red'
+        }))
         this.childTotal = response.total || 0
         this.childLoading = false
       }).catch(() => {
         this.childLoading = false
-        this.$message.error("查询子表数据失败")
-      });
+        this.$message.error("查询测试数据失败")
+      })
     },
     /** 子表分页事件处理 */
     handleChildPagination() {
-      this.getDetailData(this.currentChildTableName)
+      this.getDetailData(this.form.levelTwoTestContent)
     },
     // 取消按钮
     cancel() {
@@ -306,12 +308,11 @@ export default {
       this.reset()
     },
     cancelView() {
-      this.viewOpen = false;
-      this.childTableData = []; // 清空子表数据
-      this.currentChildTableName = ""; // 清空缓存的子表名
-      this.childPageNum = 1; // 重置子表页码
-      this.childTotal = 0; // 重置子表总数
-      this.reset();
+      this.viewOpen = false
+      this.childTableData = []
+      this.childPageNum = 1
+      this.childTotal = 0
+      this.reset()
     },
     // 表单重置
     reset() {
@@ -319,7 +320,8 @@ export default {
         id: null,
         levelTwoTestContent: null,
         levelTwoTestId: null,
-        levelOneTestId: null
+        levelOneTestId: null,
+        testRound: this.currentRound
       }
       this.resetForm("form")
     },
@@ -348,7 +350,8 @@ export default {
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset()
-      const id = row.id || this.ids
+      // 单选模式下 this.ids 为数组，避免传数组导致接口请求异常
+      const id = row.id || this.ids[0]
       getLevelTwoTest(id).then(response => {
         this.form = response.data
         this.open = true
@@ -360,19 +363,22 @@ export default {
       this.reset()
       const id = row.id || this.ids
       this.childLoading = true
+      this.childPageNum = 1
       getLevelTwoTest(id).then(response => {
         this.form = response.data
-        this.currentChildTableName = response.data.childTableName
-        this.getDetailData(this.currentChildTableName)
-        this.viewTitle = response.data.levelTwoTestContent + "("+response.data.expectedValue+")"
+        this.getDetailData(response.data.levelTwoTestContent)
+        this.viewTitle = response.data.levelTwoTestContent + "(" + (response.data.expectedValue || '') + ")"
+        this.viewOpen = true
       })
-      this.viewOpen = true
-
     },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          this.form.testRound = this.currentRound
+          if (!this.form.levelOneTestId) {
+            this.form.levelOneTestId = this.$route.query.levelOneTestId
+          }
           if (this.form.id != null) {
             updateLevelTwoTest(this.form).then(response => {
               this.$modal.msgSuccess("修改成功")
@@ -407,106 +413,42 @@ export default {
     },
     /** 图表按钮操作 */
     handleChart(row) {
-      const childTableName = row.childTableName;
-      if (!childTableName) {
-        this.$message.warning('缺少子表名称');
-        return;
-      }
-
-      const params = {
-        pageNum: 1,
-        pageSize: 10
-      };
-
-      this.childLoading = true;
-      getChildTableData(childTableName, params).then(response => {
-        this.childLoading = false;
-        const dataList = response.rows || [];
-
-        if (dataList.length === 0) {
-          this.$message.warning('暂无数据');
-          return;
+      const levelOneTestId = row.levelOneTestId || ''
+      const levelTwoTestId = row.levelTwoTestId || ''
+      this.$router.push({
+        path: `/chart/index/${levelOneTestId}/${levelTwoTestId}`,
+        query: {
+          levelTwoTestContent: row.levelTwoTestContent,
+          expectedValue: row.expectedValue,
+          round: this.currentRound
         }
-
-        // 检查测试值是否为字符类型
-        const firstMeasuredValue = dataList[0].measured_value;
-        const isCharValue = typeof firstMeasuredValue === 'string' && isNaN(Number(firstMeasuredValue));
-
-        if (isCharValue) {
-          // 字符类型，显示提示框
-          this.chartDialogMessage = '暂不支持展示该数据';
-          this.chartDialogVisible = true;
-        } else {
-          // 数值类型，跳转图表页面
-          const levelOneTestId = row.levelOneTestId || '';
-          const levelTwoTestId = row.levelTwoTestId || '';
-          this.$router.push({
-            path: `/chart/index/${levelOneTestId}/${levelTwoTestId}`,
-            query: {
-              childTableName: row.childTableName,
-              levelTwoTestContent: row.levelTwoTestContent,
-              expectedValue: row.expectedValue
-            }
-          });
-        }
-      }).catch(() => {
-        this.childLoading = false;
-        this.$message.error('获取数据失败');
-      });
+      })
     },
     // 表格行样式判断
     tableRowClassName({ row }) {
-      // 判断：如果qualified为false（不合格），返回自定义样式类
-      if (row.qualified === false || row.qualified === 0 || row.qualified === 'false') {
-        return 'row-red'; // 自定义类名，后续用CSS设置颜色
+      if (row.isQualified === 1) {
+        return ''
       }
-      // 合格/未填写的行返回空，使用默认样式
-      return '';
+      return 'row-red'
     },
     /** 异常处理按钮操作（与图表跳转一致：先校验子表并拉取数据，再进入页面） */
     handleError(row) {
-      const childTableName = row.childTableName;
-      if (!childTableName) {
-        this.$message.warning('缺少子表名称');
-        return;
-      }
-
-      const params = {
-        pageNum: 1,
-        pageSize: 10
-      };
-
-      this.childLoading = true;
-      getChildTableData(childTableName, params).then(response => {
-        this.childLoading = false;
-        const dataList = response.rows || [];
-
-        if (dataList.length === 0) {
-          this.$message.warning('暂无数据');
-          return;
+      const levelOneTestId = row.levelOneTestId || ''
+      const levelTwoTestId = row.levelTwoTestId || ''
+      this.$router.push({
+        path: `/test/error/${levelOneTestId}/${levelTwoTestId}`,
+        query: {
+          levelTwoTestContent: row.levelTwoTestContent,
+          expectedValue: row.expectedValue,
         }
-
-        const levelOneTestId = row.levelOneTestId || '';
-        const levelTwoTestId = row.levelTwoTestId || '';
-        this.$router.push({
-          path: `/test/error/${levelOneTestId}/${levelTwoTestId}`,
-          query: {
-            childTableName: row.childTableName,
-            levelTwoTestContent: row.levelTwoTestContent,
-            expectedValue: row.expectedValue
-          }
-        });
-      }).catch(() => {
-        this.childLoading = false;
-        this.$message.error('获取数据失败');
-      });
+      })
     }
 
   }
 }
 </script>
-<style>
- .row-red {
+<style scoped>
+::v-deep .row-red {
   color: red !important;
 }
 </style>

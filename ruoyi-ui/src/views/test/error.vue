@@ -20,18 +20,14 @@
           :row-class-name="tableRowClassName"
         >
           <el-table-column label="自增主键" align="center" prop="id" width="100" />
-          <el-table-column label="测试值" align="center" prop="measured_value" min-width="120" />
+          <el-table-column label="测试值" align="center" prop="measureValue" min-width="120" />
           <el-table-column label="是否合格" align="center" width="120">
             <template slot-scope="scope">
               <span class="text-danger">不合格</span>
             </template>
           </el-table-column>
-          <el-table-column label="记录时间" align="center" prop="gmt_created" width="180" />
-          <el-table-column label="修改时间" align="center" width="180">
-            <template slot-scope="scope">
-              <span>{{ formatGmtModified(scope.row.gmt_modified) }}</span>
-            </template>
-          </el-table-column>
+          <el-table-column label="记录时间" align="center" prop="gmtCreated" width="180" />
+          <el-table-column label="处理时间" align="center" prop="gmtModified" width="180" />
           <el-table-column label="处理进度" align="center" min-width="168" fixed="right">
             <template slot-scope="scope">
               <el-select
@@ -60,15 +56,11 @@
 </template>
 
 <script>
-import { getChildTableData, updateChildTableProgress } from '@/api/test/levelTwoTest'
+import { listTestData, updateTestData } from '@/api/test/testData'
 import { createNamespacedHelpers } from 'vuex'
 
 const { mapActions: mapTagsViewActions } = createNamespacedHelpers('tagsView')
 
-/**
- * 与库字段 process_progress 一致：
- * 0-未处理 1-处理中 2-已处理 3-无法处理
- */
 const PROGRESS_OPTIONS = [
   { label: '未处理', value: 0 },
   { label: '正在处理', value: 1 },
@@ -77,7 +69,7 @@ const PROGRESS_OPTIONS = [
 ]
 
 function isUnqualified(row) {
-  const q = row.qualified
+  const q = row.isQualified
   return q === false || q === 0 || q === 'false'
 }
 
@@ -109,8 +101,8 @@ export default {
       return (this.rawData || [])
         .filter(isUnqualified)
         .sort((a, b) => {
-          const timeA = new Date(a.gmt_created).getTime()
-          const timeB = new Date(b.gmt_created).getTime()
+          const timeA = new Date(a.gmtCreated).getTime()
+          const timeB = new Date(b.gmtCreated).getTime()
           if (timeA !== timeB) {
             return timeA - timeB
           }
@@ -131,54 +123,64 @@ export default {
     tableRowClassName() {
       return 'row-unqualified'
     },
-    formatGmtModified(val) {
-      if (!val) {
-        return '—'
-      }
-      return this.parseTime(val) || '—'
-    },
     getProgressValue(row) {
-      return toProgressNumber(row.process_progress)
+      return toProgressNumber(row.processStatus)
     },
-    async onProgressChange(row, value) {
-      const childTableName = this.$route.query.childTableName
-      if (!childTableName) {
-        this.$message.warning('缺少子表名称')
-        return
-      }
-      const progress = value === null || value === undefined || value === '' ? 0 : Number(value)
+    saveProgress(row, processStatus) {
+      return updateTestData({
+        id: row.id,
+        processStatus,
+        levelTwoTestContent: row.levelTwoTestContent,
+        measureValue: row.measureValue,
+        valueType: row.valueType,
+        isQualified: row.isQualified,
+        gmtCreated: row.gmtCreated,
+        gmtModified: row.gmtModified
+      })
+    },
+    onProgressChange(row, val) {
+      const nextValue = toProgressNumber(val)
       this.rowUpdatingId = row.id
-      try {
-        await updateChildTableProgress(childTableName, {
-          id: row.id,
-          processProgress: progress
+      this.saveProgress(row, nextValue)
+        .then(() => {
+          row.processStatus = nextValue
+          this.$message.success('处理进度已保存')
         })
-        this.$set(row, 'process_progress', progress)
-        this.$set(row, 'gmt_modified', new Date())
-        this.$message.success('处理进度已保存')
-      } catch (e) {
-        /* 全局拦截已提示 */
-      } finally {
-        this.rowUpdatingId = null
-      }
+        .catch(() => {
+          this.$message.error('保存处理进度失败')
+        })
+        .finally(() => {
+          this.rowUpdatingId = null
+        })
     },
     loadData() {
-      const childTableName = this.$route.query.childTableName
-      if (!childTableName) {
+      const levelTwoTestContent = this.$route.query.levelTwoTestContent
+      if (!levelTwoTestContent) {
         this.loading = false
-        this.$message.warning('缺少子表名称')
+        this.$message.warning('缺少测试项名称')
         return
       }
 
       this.loading = true
-      getChildTableData(childTableName, { pageNum: 1, pageSize: 1000 })
+      listTestData({ levelTwoTestContent, isQualified: 0 })
         .then(response => {
-          this.rawData = response.rows || []
-          this.loading = false
+          this.rawData = Array.isArray(response && response.rows) ? response.rows.map(item => ({
+            ...item,
+            measureValue: item.measureValue,
+            gmtCreated: item.gmtCreated,
+            gmtModified: item.gmtModified,
+            processStatus: item.processStatus,
+            isQualified: item.isQualified,
+            levelTwoTestContent: item.levelTwoTestContent,
+            valueType: item.valueType
+          })) : []
         })
         .catch(() => {
+          this.rawData = []
+          this.$message.error('获取测试数据失败')
+        })
+        .finally(() => {
           this.loading = false
-          this.$message.error('获取子表数据失败')
         })
     }
   }

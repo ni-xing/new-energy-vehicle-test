@@ -94,8 +94,8 @@ export const constantRoutes = [
     hidden: true,
     children: [
       {
-        path: 'firstTest/levelTwoTest/index',
-        component: () => import('@/views/test/firstTest/levelTwoTest/index'),
+        path: 'levelOneTest/levelTwoTest/index',
+        component: () => import('@/views/test/levelOneTest/levelTwoTest/index'),
         name: 'levelTwoTest',
         meta: {title: '二级测试项目目录', icon: ''}
       },
