@@ -8,7 +8,7 @@
 
       <div v-if="rawData.length > 0">
         <!-- 图表 -->
-        <div id="chart" style="width: 100%; height: 400px;"></div>
+        <div ref="chartEl" style="width: 100%; height: 400px;"></div>
       </div>
 
       <div v-else-if="loading">
@@ -23,34 +23,32 @@
 </template>
 
 <script>
-import { getChildTableData } from "@/api/test/levelTwoTest";
-import { mapGetters, mapActions, createNamespacedHelpers } from 'vuex';
+import { listTestData } from "@/api/test/testData";
+import { createNamespacedHelpers } from 'vuex';
 import * as echarts from 'echarts';
+import resize from '../dashboard/mixins/resize'
 
 const { mapActions: mapTagsViewActions } = createNamespacedHelpers('tagsView');
 
 export default {
   name: "chart",
+  mixins: [resize],
     data() {
     return {
-      childTableName: null,
       loading: true,
       rawData: [],
       chart: null,
-      isCharValue: false  // 测试值是否为字符类型
+      expectedValue: '',
+      levelTwoTestContent: ''
     }
   },
   created() {
-    this.childTableName = this.$route.query.childTableName || null;
+    this.levelTwoTestContent = this.$route.query.levelTwoTestContent || '';
+    this.expectedValue = this.$route.query.expectedValue || '';
     this.getData();
   },
   beforeDestroy() {
-    if (this.chart) {
-      this.chart.dispose();
-    }
-  },
-  computed: {
-    ...mapGetters(['visitedViews'])
+    this.disposeChart()
   },
   methods: {
     ...mapTagsViewActions(['delView']),
@@ -59,129 +57,198 @@ export default {
         this.$router.go(-1);
       });
     },
+    disposeChart() {
+      const dom = this.$refs.chartEl
+      if (this.chart) {
+        this.chart.dispose()
+        this.chart = null
+      } else if (dom) {
+        const instance = echarts.getInstanceByDom(dom)
+        instance && instance.dispose()
+      }
+    },
     getData() {
-      if (!this.childTableName) {
-        this.loading = false;
-        this.$message.warning('缺少子表名称');
-        return;
+      this.levelTwoTestContent = this.$route.query.levelTwoTestContent || ''
+      this.expectedValue = this.$route.query.expectedValue || ''
+
+      if (!this.levelTwoTestContent) {
+        this.loading = false
+        this.rawData = []
+        this.disposeChart()
+        this.$message.warning('缺少二级测试项名称')
+        return
       }
 
-      this.loading = true;
-      this.getChildTableData(this.childTableName);
-    },
-    getChildTableData(childTableName) {
-      if (!childTableName) {
-        this.loading = false;
-        this.$message.warning('子表名称为空');
-        return;
-      }
+      this.disposeChart()
+      this.loading = true
+      this.rawData = []
 
       const params = {
+        levelTwoTestContent: this.levelTwoTestContent,
         pageNum: 1,
         pageSize: 1000
-      };
-
-      getChildTableData(childTableName, params).then(response => {
-        this.rawData = response.rows || [];
-        this.loading = false;
-        this.$nextTick(() => {
-          this.initChart();
-        });
-      }).catch(() => {
-        this.loading = false;
-        this.$message.error('获取子表数据失败');
-      });
+      }
+      listTestData(params)
+        .then(response => {
+          this.rawData = (response.rows || []).map(item => ({
+            ...item,
+            measured_value: this.normalizeMeasuredValue(item.measureValue, item.valueType)
+          }))
+          this.$nextTick(() => this.initChart())
+        })
+        .catch(() => {
+          this.$message.error('获取测试数据失败')
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    },
+    normalizeMeasuredValue(value, valueType) {
+      if (value === null || value === undefined || value === '') {
+        return null
+      }
+      const type = (valueType || '').toLowerCase()
+      if (type === 'int') {
+        const n = parseInt(value, 10)
+        return Number.isNaN(n) ? NaN : n
+      }
+      if (type === 'float') {
+        const n = parseFloat(value)
+        return Number.isNaN(n) ? NaN : n
+      }
+      return value
     },
     initChart() {
-      if (this.rawData.length === 0) {
-        return;
-      }
+      if (!this.rawData || this.rawData.length === 0) return
 
-      this.chart = echarts.init(document.getElementById('chart'));
+      const dom = this.$refs.chartEl
+      if (!dom) return
+
+      // 防止对同一 DOM 重复 init
+      const existing = echarts.getInstanceByDom(dom)
+      this.chart = existing || echarts.init(dom)
 
       // 按时间顺序排序数据，相同时间按id排序
       const sortedData = [...this.rawData].sort((a, b) => {
-        const timeA = new Date(a.gmt_created).getTime();
-        const timeB = new Date(b.gmt_created).getTime();
-        if (timeA !== timeB) {
-          return timeA - timeB;
-        }
-        // 时间相同时，按id比较
-        return (a.id || 0) - (b.id || 0);
-      });
+        const timeA = new Date(a.gmtCreated).getTime()
+        const timeB = new Date(b.gmtCreated).getTime()
+        if (timeA !== timeB) return timeA - timeB
+        return (a.id || 0) - (b.id || 0)
+      })
 
-      // 格式化时间为 yyyy-MM-dd
       const formatDate = (dateStr) => {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
+        if (!dateStr) return ''
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
 
-      const xData = sortedData.map(item => formatDate(item.gmt_created));
-      const yData = sortedData.map(item => item.measured_value !== undefined ? item.measured_value : 0);
-      const qualifiedData = sortedData.map(item => item.qualified === true ? '合格' : (item.qualified === false ? '不合格' : '未填写'));
+      const isUnqualified = (qualified) => qualified === 0
 
-      // 从预期值中提取数值（支持范围格式，如 "10-20"、"12V-16V" 或 "10~15"）
-      const expectedValue = this.$route.query.expectedValue || '';
-      console.log('预期值:', expectedValue);
-      let expectedLines = [];
-      if (expectedValue) {
-        // 尝试匹配范围格式（用 - 或 ~ 分隔，支持带单位如 12V-16V）
-        // 匹配：数字（可带小数点，可带单位字母） + 分隔符 + 数字（可带小数点，可带单位字母）
-        const rangeMatch = expectedValue.match(/^([\d.]+\s*[a-zA-Z]*)\s*[-~]\s*([\d.]+\s*[a-zA-Z]*)$/);
-        console.log('范围匹配:', rangeMatch);
-        if (rangeMatch) {
-          // 范围格式：上下限都有
-          const lowerNum = parseFloat(rangeMatch[1]);
-          const upperNum = parseFloat(rangeMatch[2]);
-          const lowerLabel = rangeMatch[1].trim();
-          const upperLabel = rangeMatch[2].trim();
-          if (!isNaN(lowerNum) && !isNaN(upperNum)) {
-            expectedLines = [
-              { value: lowerNum, label: '下限: ' + lowerLabel },
-              { value: upperNum, label: '上限: ' + upperLabel }
-            ];
-          }
-        } else {
-          // 单值格式（保留单位）
-          const num = parseFloat(expectedValue);
-          console.log('单值解析:', expectedValue, num);
-          if (!isNaN(num)) {
-            expectedLines = [{ value: num, label: '预期值: ' + expectedValue }];
+      const qualifiedLabel = (qualified) => {
+        if (qualified === 1) return '合格'
+        if (qualified === 0) return '不合格'
+        return '未知'
+      }
+
+      const parseMeasuredValue = (v) => {
+        // null/undefined/空字符串 -> 允许（按 0 展示），但非数字字符串 -> 阻止渲染
+        if (v === null || v === undefined) return null
+        if (typeof v === 'string') {
+          const t = v.trim()
+          if (!t) return null
+          const n = parseFloat(t)
+          return Number.isFinite(n) ? n : NaN
+        }
+        if (typeof v === 'number') return Number.isFinite(v) ? v : NaN
+        return NaN
+      }
+
+      // 预期参考线：提取数字；若包含范围分隔符则画上下限，否则画单值
+      const expectedValue = (this.expectedValue || '').trim()
+      const nums = (expectedValue.match(/\d+(?:\.\d+)?/g) || []).map(Number).filter(Number.isFinite)
+      const hasRange = /[-~～]/.test(expectedValue)
+
+      let expectedLines = []
+      if (hasRange && nums.length >= 2) {
+        const lower = Math.min(nums[0], nums[1])
+        const upper = Math.max(nums[0], nums[1])
+        expectedLines = [
+          { value: lower, label: '下限: ' + lower },
+          { value: upper, label: '上限: ' + upper }
+        ]
+      } else if (nums.length >= 1) {
+        expectedLines = [{ value: nums[0], label: '预期值: ' + nums[0] }]
+      }
+
+      const invalidMeasured = sortedData.some(item => {
+        const parsed = parseMeasuredValue(item.measureValue)
+        return parsed !== null && Number.isNaN(parsed)
+      })
+      if (invalidMeasured) {
+        this.$message.warning('测量值存在非数字内容，暂不支持展示该数据')
+        return
+      }
+
+      const xData = sortedData.map(item => formatDate(item.gmtCreated))
+      const points = sortedData.map(item => {
+        const measuredNum = parseMeasuredValue(item.measureValue)
+        const value = measuredNum === null ? 0 : measuredNum
+        const qualified = item.isQualified
+        const unqualified = isUnqualified(qualified)
+        return {
+          value,
+          itemStyle: { color: unqualified ? '#F56C6C' : '#409EFF' },
+          record: {
+            id: item.id || '',
+            date: formatDate(item.gmtCreated),
+            measuredValue: value,
+            qualifiedLabel: qualifiedLabel(qualified),
+            isUnqualified: unqualified
           }
         }
-      }
-      console.log('预期参考线:', expectedLines);
+      })
+
+      const expectedMarkLine = expectedLines.length > 0
+        ? {
+            symbol: ['none', 'none'],
+            label: { show: true, position: 'end' },
+            lineStyle: { color: '#67C23A', type: 'dashed', width: 2 },
+            data: expectedLines.map((item, index) => ({
+              yAxis: item.value,
+              label: { formatter: item.label },
+              lineStyle: {
+                color: index === 0 ? '#F56C6C' : '#409EFF',
+                type: 'dashed',
+                width: 2
+              }
+            })),
+            animation: false
+          }
+        : undefined
 
       const option = {
         tooltip: {
           trigger: 'axis',
-          formatter: function (params) {
-            const data = params[0];
-            const index = data.dataIndex;
-            const item = sortedData[index];
-            const qualified = item.qualified;
-            const isUnqualified = qualified === false || qualified === 'false' || qualified === 0;
-
-            // 不合格时全部标红
-            const contentStyle = isUnqualified ? 'color: #F56C6C; font-weight: bold;' : '';
-
+          formatter: (params) => {
+            const data = params && params[0]
+            const record = data && data.data && data.data.record ? data.data.record : null
+            if (!record) return ''
+            const contentStyle = record.isUnqualified ? 'color: #F56C6C; font-weight: bold;' : ''
             return `<div style="padding: 5px;">
-              <div style="margin-bottom: 5px; ${contentStyle}">ID: ${item.id || ''}</div>
-              <div style="margin-bottom: 5px; ${contentStyle}">日期: ${xData[index]}</div>
-              <div style="margin-bottom: 5px; ${contentStyle}">测量值: ${yData[index]}</div>
-              <div style="margin-bottom: 5px; ${contentStyle}">状态: ${qualifiedData[index]}</div>
-            </div>`;
+              <div style="margin-bottom: 5px; ${contentStyle}">ID: ${record.id || ''}</div>
+              <div style="margin-bottom: 5px; ${contentStyle}">日期: ${record.date || ''}</div>
+              <div style="margin-bottom: 5px; ${contentStyle}">测量值: ${record.measuredValue}</div>
+              <div style="margin-bottom: 5px; ${contentStyle}">状态: ${record.qualifiedLabel || '未知'}</div>
+            </div>`
           }
         },
-        // 新增 grid 配置，调整底部边距
         grid: {
           left: '3%',
           right: '4%',
-          bottom: '15%', // 增大底部边距，为 dataZoom 留出空间
+          bottom: '15%',
           containLabel: true
         },
         xAxis: {
@@ -190,82 +257,27 @@ export default {
           name: '日期',
           nameLocation: 'middle',
           nameGap: 30,
-          axisLabel: {
-            show: true,
-            interval: 0
-          }
+          axisLabel: { show: true, interval: 0 }
         },
         yAxis: {
           type: 'value',
           name: '测量值'
         },
         dataZoom: [
-          {
-            type: 'inside',
-            start: 0,
-            end: 10,
-            bottom: 12
-          },
-          {
-            start: 0,
-            end: 10,
-            bottom: 12
-          }
+          { type: 'inside', start: 0, end: 10, bottom: 12 },
+          { start: 0, end: 10, bottom: 12 }
         ],
         series: [
           {
-            data: yData.map((value, index) => {
-              const qualified = sortedData[index].qualified;
-              const isUnqualified = qualified === false || qualified === 'false' || qualified === 0;
-              return {
-                value: value,
-                itemStyle: {
-                  color: isUnqualified ? '#F56C6C' : '#409EFF'
-                }
-              };
-            }),
+            data: points,
             type: 'line',
-            smooth: false
+            smooth: false,
+            ...(expectedMarkLine ? { markLine: expectedMarkLine } : {})
           }
         ]
-      };
-
-      this.chart.setOption(option);
-
-      // 添加预期值参考线（支持单值和范围）
-      if (expectedLines.length > 0) {
-        console.log('添加预期参考线:', expectedLines);
-        this.chart.setOption({
-          series: [{
-            markLine: {
-              symbol: ['none', 'none'],
-              label: {
-                show: true,
-                position: 'end'
-              },
-              // 默認樣式（單值時使用）
-              lineStyle: {
-                color: '#67C23A',
-                type: 'dashed',
-                width: 2
-              },
-              data: expectedLines.map((item, index) => ({
-                yAxis: item.value,
-                label: { formatter: item.label },
-                // 每條線單獨設置顏色：第一條下限紅色，第二條上限藍色
-                lineStyle: {
-                  color: index === 0 ? '#F56C6C' : '#409EFF',
-                  type: 'dashed',
-                  width: 2
-                }
-              })),
-              animation: false
-            }
-          }]
-        });
-      } else {
-        console.log('未添加预期参考线，expectedLines 为空');
       }
+
+      this.chart.setOption(option)
     }
   }
 }
