@@ -24,6 +24,7 @@
 
 <script>
 import { listTestData } from "@/api/test/testData";
+import { getLevelTwoTest } from "@/api/test/levelTwoTest";
 import { createNamespacedHelpers } from 'vuex';
 import * as echarts from 'echarts';
 import resize from '../dashboard/mixins/resize'
@@ -39,13 +40,14 @@ export default {
       rawData: [],
       chart: null,
       expectedValue: '',
-      levelTwoTestContent: ''
+      levelTwoTestContent: '',
+      valueType: ''
     }
   },
   created() {
     this.levelTwoTestContent = this.$route.query.levelTwoTestContent || '';
     this.expectedValue = this.$route.query.expectedValue || '';
-    this.getData();
+    this.getMetaAndData();
   },
   beforeDestroy() {
     this.disposeChart()
@@ -67,10 +69,7 @@ export default {
         instance && instance.dispose()
       }
     },
-    getData() {
-      this.levelTwoTestContent = this.$route.query.levelTwoTestContent || ''
-      this.expectedValue = this.$route.query.expectedValue || ''
-
+    getMetaAndData() {
       if (!this.levelTwoTestContent) {
         this.loading = false
         this.rawData = []
@@ -83,16 +82,20 @@ export default {
       this.loading = true
       this.rawData = []
 
-      const params = {
-        levelTwoTestContent: this.levelTwoTestContent,
-        pageNum: 1,
-        pageSize: 1000
-      }
-      listTestData(params)
+      getLevelTwoTest(this.$route.query.levelTwoTestId || '').then(response => {
+        this.valueType = (response.data && response.data.valueType) || ''
+        const params = {
+          levelTwoTestContent: this.levelTwoTestContent,
+          pageNum: 1,
+          pageSize: 1000
+        }
+        return listTestData(params)
+      })
         .then(response => {
-          this.rawData = (response.rows || []).map(item => ({
+          const rows = Array.isArray(response && response.rows) ? response.rows : []
+          this.rawData = rows.map(item => ({
             ...item,
-            measured_value: this.normalizeMeasuredValue(item.measureValue, item.valueType)
+            measureValue: this.normalizeMeasuredValue(item.measureValue, this.valueType)
           }))
           this.$nextTick(() => this.initChart())
         })
@@ -254,10 +257,9 @@ export default {
         xAxis: {
           type: 'category',
           data: xData,
-          name: '日期',
-          nameLocation: 'middle',
-          nameGap: 30,
-          axisLabel: { show: true, interval: 0 }
+          axisLabel: { show: false },
+          axisTick: { show: false },
+          axisLine: { show: false }
         },
         yAxis: {
           type: 'value',

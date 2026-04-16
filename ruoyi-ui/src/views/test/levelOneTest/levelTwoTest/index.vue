@@ -124,6 +124,13 @@
         <el-form-item label="关联一级测试用例" prop="levelOneTestId">
           <el-input v-model="form.levelOneTestId" placeholder="请输入关联一级测试用例" />
         </el-form-item>
+        <el-form-item label="值类型" prop="valueType">
+          <el-select v-model="form.valueType" placeholder="请选择值类型">
+            <el-option label="整数" value="int" />
+            <el-option label="字符串" value="string" />
+            <el-option label="浮点数" value="float" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -239,6 +246,9 @@ export default {
         ],
         levelOneTestId: [
           { required: true, message: "关联一级测试用例不能为空", trigger: "blur" }
+        ],
+        valueType: [
+          { required: true, message: "值类型不能为空", trigger: "change" }
         ]
       }
     }
@@ -321,6 +331,7 @@ export default {
         levelTwoTestContent: null,
         levelTwoTestId: null,
         levelOneTestId: null,
+        valueType: null,
         testRound: this.currentRound
       }
       this.resetForm("form")
@@ -418,6 +429,7 @@ export default {
       this.$router.push({
         path: `/chart/index/${levelOneTestId}/${levelTwoTestId}`,
         query: {
+          levelTwoTestId: row.id,
           levelTwoTestContent: row.levelTwoTestContent,
           expectedValue: row.expectedValue,
           round: this.currentRound

@@ -30,6 +30,9 @@ public class LevelTwoTest extends BaseEntity
     @Excel(name = "对应预期值")
     private String expectedValue;
 
+    @Excel(name = "值类型", readConverterExp = "int=整型,string=字符,float=浮点")
+    private String valueType;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -48,6 +51,9 @@ public class LevelTwoTest extends BaseEntity
     public String getExpectedValue() { return expectedValue; }
     public void setExpectedValue(String expectedValue) { this.expectedValue = expectedValue; }
 
+    public String getValueType() { return valueType; }
+    public void setValueType(String valueType) { this.valueType = valueType; }
+
     @Override
     public String toString()
     {
@@ -58,6 +64,7 @@ public class LevelTwoTest extends BaseEntity
             .append("levelOneTestId", getLevelOneTestId())
             .append("testRound", getTestRound())
             .append("expectedValue", getExpectedValue())
+            .append("valueType", getValueType())
             .toString();
     }
 }

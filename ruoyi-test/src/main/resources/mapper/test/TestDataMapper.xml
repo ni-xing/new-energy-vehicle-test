@@ -8,7 +8,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id"    column="id"    />
         <result property="levelTwoTestContent"    column="level_two_test_content"    />
         <result property="measureValue"    column="measure_value"    />
-        <result property="valueType"    column="value_type"    />
         <result property="isQualified"    column="is_qualified"    />
         <result property="processStatus"    column="process_status"    />
         <result property="gmtCreated"    column="gmt_created"    />
@@ -16,7 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTestDataVo">
-        select id, level_two_test_content, measure_value, value_type, is_qualified, process_status, gmt_created, gmt_modified from test_data
+        select id, level_two_test_content, measure_value, is_qualified, process_status, gmt_created, gmt_modified from test_data
     </sql>
 
     <select id="selectTestDataList" parameterType="com.ruoyi.test.domain.TestData" resultMap="TestDataResult">
@@ -24,7 +23,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             <if test="levelTwoTestContent != null  and levelTwoTestContent != ''"> and level_two_test_content = #{levelTwoTestContent}</if>
             <if test="measureValue != null  and measureValue != ''"> and measure_value = #{measureValue}</if>
-            <if test="valueType != null  and valueType != ''"> and value_type = #{valueType}</if>
             <if test="isQualified != null "> and is_qualified = #{isQualified}</if>
             <if test="processStatus != null "> and process_status = #{processStatus}</if>
             <if test="gmtCreated != null "> and gmt_created = #{gmtCreated}</if>
@@ -42,7 +40,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content,</if>
             <if test="measureValue != null">measure_value,</if>
-            <if test="valueType != null and valueType != ''">value_type,</if>
             <if test="isQualified != null">is_qualified,</if>
             <if test="processStatus != null">process_status,</if>
             <if test="gmtCreated != null">gmt_created,</if>
@@ -51,7 +48,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">#{levelTwoTestContent},</if>
             <if test="measureValue != null">#{measureValue},</if>
-            <if test="valueType != null and valueType != ''">#{valueType},</if>
             <if test="isQualified != null">#{isQualified},</if>
             <if test="processStatus != null">#{processStatus},</if>
             <if test="gmtCreated != null">#{gmtCreated},</if>
@@ -64,7 +60,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">level_two_test_content = #{levelTwoTestContent},</if>
             <if test="measureValue != null">measure_value = #{measureValue},</if>
-            <if test="valueType != null and valueType != ''">value_type = #{valueType},</if>
             <if test="isQualified != null">is_qualified = #{isQualified},</if>
             <if test="processStatus != null">process_status = #{processStatus},</if>
             <if test="gmtCreated != null">gmt_created = #{gmtCreated},</if>

@@ -11,10 +11,11 @@
         <result property="levelOneTestId" column="level_one_test_id" />
         <result property="testRound" column="test_round" />
         <result property="expectedValue" column="expected_value" />
+        <result property="valueType" column="value_type" />
     </resultMap>
 
     <sql id="selectLevelTwoTestVo">
-        select id, level_two_test_content, level_two_test_id, level_one_test_id, test_round, expected_value from level_two_test
+        select id, level_two_test_content, level_two_test_id, level_one_test_id, test_round, expected_value, value_type from level_two_test
     </sql>
 
     <select id="selectLevelTwoTestList" parameterType="com.ruoyi.test.domain.LevelTwoTest" resultMap="LevelTwoTestResult">
@@ -25,6 +26,7 @@
             <if test="levelOneTestId != null">and level_one_test_id = #{levelOneTestId}</if>
             <if test="testRound != null">and test_round = #{testRound}</if>
             <if test="expectedValue != null and expectedValue != ''">and expected_value = #{expectedValue}</if>
+            <if test="valueType != null and valueType != ''">and value_type = #{valueType}</if>
         </where>
     </select>
 
@@ -41,6 +43,7 @@
             <if test="levelOneTestId != null">level_one_test_id,</if>
             <if test="testRound != null">test_round,</if>
             <if test="expectedValue != null and expectedValue != ''">expected_value,</if>
+            <if test="valueType != null and valueType != ''">value_type,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="levelTwoTestContent != null and levelTwoTestContent != ''">#{levelTwoTestContent},</if>
@@ -48,6 +51,7 @@
             <if test="levelOneTestId != null">#{levelOneTestId},</if>
             <if test="testRound != null">#{testRound},</if>
             <if test="expectedValue != null and expectedValue != ''">#{expectedValue},</if>
+            <if test="valueType != null and valueType != ''">#{valueType},</if>
         </trim>
     </insert>
 
@@ -59,6 +63,7 @@
             <if test="levelOneTestId != null">level_one_test_id = #{levelOneTestId},</if>
             <if test="testRound != null">test_round = #{testRound},</if>
             <if test="expectedValue != null and expectedValue != ''">expected_value = #{expectedValue},</if>
+            <if test="valueType != null and valueType != ''">value_type = #{valueType},</if>
         </trim>
         where id = #{id}
     </update>

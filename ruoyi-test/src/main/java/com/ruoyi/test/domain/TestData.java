@@ -27,10 +27,6 @@ public class TestData extends BaseEntity
     @Excel(name = "测量值")
     private String measureValue;
 
-    /** 值类型 int/string/float */
-    @Excel(name = "值类型", readConverterExp = "int=整型,string=字符,float=浮点")
-    private String valueType;
-
     /** 0不合格 1合格 */
     @Excel(name = "0不合格 1合格")
     private Long isQualified;
@@ -75,16 +71,6 @@ public class TestData extends BaseEntity
     public String getMeasureValue() 
     {
         return measureValue;
-    }
-
-    public void setValueType(String valueType)
-    {
-        this.valueType = valueType;
-    }
-
-    public String getValueType()
-    {
-        return valueType;
     }
 
     public void setIsQualified(Long isQualified) 
@@ -133,7 +119,6 @@ public class TestData extends BaseEntity
             .append("id", getId())
             .append("levelTwoTestContent", getLevelTwoTestContent())
             .append("measureValue", getMeasureValue())
-            .append("valueType", getValueType())
             .append("isQualified", getIsQualified())
             .append("processStatus", getProcessStatus())
             .append("gmtCreated", getGmtCreated())
